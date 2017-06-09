@@ -53,6 +53,7 @@ Import
     "unpack" : [ 'polyfill' ]
     "eventing" : [ 'polyfill' ]
     "async-io" : [ 'polyfill' ]
+    "plugin" : [ 'polyfill' ]
 
 task 'init-deps', '',(done)->
   for each of Dependencies 
@@ -71,11 +72,10 @@ task 'init',"",[ "init-deps" ], (done)->
     doit = true if (newer "#{basefolder}/package.json",  "#{basefolder}/package-lock.json") 
   else 
     doit = true if (newer "#{basefolder}/package.json",  "#{basefolder}/node_modules") 
-
   
   typescriptProjectFolders()
     .on 'end', -> 
-      if doit
+      if doit || force
           echo warning "\n#{ info 'NOTE:' } 'node_modules' may be out of date - running 'npm install' for you.\n"
           exec "npm install", {cwd:basefolder,silent:true},(c,o,e)->
             done null

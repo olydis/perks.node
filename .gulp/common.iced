@@ -165,6 +165,7 @@ module.exports =
 
   newer: (first,second) ->
     return true if (!test "-d", second) and (!test "-f", second)
+    return false if (!test "-d",first) and (!test "-f", first)
     f = fs.statSync(first).mtime
     s = fs.statSync(second).mtime
     return f > s 
