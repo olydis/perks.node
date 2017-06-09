@@ -72,6 +72,13 @@ function getVersionFromRelease(release: string): string {
   return "";
 }
 
+export function getReleaseFromVersion(version: string): string {
+  if (isVersion(version)) {
+    return getReleases(version)[0];
+  }
+  return version;
+}
+
 export function isArchitecture(version: string, operatingSystem: string, architecture: string): boolean {
   getVersionFromRelease(version)
 
@@ -143,10 +150,21 @@ export function getDownloadUrl(version: string, operatingSystem: string, archite
   throw new UnknownFramework(`${version}/${operatingSystem}/${architecture}`);
 }
 
-export function installFramework(version: string, operatingSystem: string, architecture: string, folder: string): ProgressPromise {
+export async function isInstalled(version: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`)): Promise<boolean> {
+  return (await listInstalledFrameworkRevisions(folder)).indexOf(version) > -1;
+}
+
+export function installFramework(version: string, operatingSystem: string, architecture: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`), force: boolean = false): ProgressPromise {
+  version = getReleaseFromVersion(version);
   const URL = getDownloadUrl(version, operatingSystem, architecture);
-  var rq = progress(req(URL), { delay: 500, throttle: 500 });
-  var result = new ProgressPromise(unpack(rq, folder));
+  let rq = progress(req(URL), { delay: 500, throttle: 500 });
+
+  const result = new ProgressPromise(isInstalled(version, folder).then(async (i) => {
+    if (force || !i) {
+      return await unpack(rq, folder)
+    }
+    return true;
+  }));
 
   rq.on("progress", (state: any) => {
     result.SetProgress(Math.round(state.percent * 100));
@@ -170,6 +188,7 @@ export function getAllReleasesAndVersions(): Array<string> {
   }
   return result;
 }
+
 export function getAllReleases(): Array<string> {
   const result = [];
 
@@ -182,7 +201,6 @@ export function getAllReleases(): Array<string> {
   }
   return result;
 }
-
 
 export function detectOperatingSystem(version: string): string {
   switch (version) {
@@ -295,12 +313,16 @@ export async function listInstalledFrameworkRevisions(folder: string): Promise<A
     const shared = path.join(folder, "shared", "Microsoft.NETCore.App");
     if (await exists(shared)) {
       // yes there is a shared framework folder. 
-      return await readdir(shared);
+      const result = []
+      for (const each of await readdir(shared)) {
+        // strip build junk off end.
+        result.push(each.replace(/(.*?)-(.*?)-.*/g, `$1-$2`));
+      }
+      return result;
     }
   }
   return [];
 }
-
 
 export async function removeAllFrameworks(folder: string): Promise<void> {
   if (await exists(folder)) {
@@ -310,15 +332,9 @@ export async function removeAllFrameworks(folder: string): Promise<void> {
 
 export async function removeInstalledFramework(folder: string, release: string): Promise<void> {
   if (await exists(folder)) {
-    const fwks = await listInstalledFrameworkRevisions(folder);
-    if (fwks.length) {
-      for (const fwk of fwks) {
-        if (fwk == release) {
-          await rmdir(path.join(folder, "shared", "Microsoft.NETCore.App", fwk));
-          break;
-        }
-      }
-    }
+    const fw = await getFrameworkFolder(folder, release);
+    await rmdir(fw);
+
     if (!(await listInstalledFrameworkRevisions(folder)).length) {
       // no frameworks left. remove the whole folder
       await rmdir(folder);
@@ -328,9 +344,15 @@ export async function removeInstalledFramework(folder: string, release: string):
 
 export async function getFrameworkFolder(folder: string, release: string): Promise<string> {
   if (await exists(folder)) {
-    const fw = path.join(folder, "shared", "Microsoft.NETCore.App", release);
-    if (await exists(fw)) {
-      return fw;
+    const shared = path.join(folder, "shared", "Microsoft.NETCore.App");
+    if (await exists(shared)) {
+      for (const each of await readdir(shared)) {
+        // strip build junk off end.
+        const fwname = each.replace(/(.*?)-(.*?)-.*/g, `$1-$2`);
+        if (fwname == release) {
+          return path.join(shared, each);
+        }
+      }
     }
   }
   throw new FrameworkNotInstalledException(folder, release);

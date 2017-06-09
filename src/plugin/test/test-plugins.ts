@@ -57,9 +57,13 @@ const pluginManager = PluginManager.Create(fs.mkdtempSync(`${os.tmpdir()}/instal
 
   @test async "Install plugin"() {
 
-    const dni = await this.pluginManager.findPackage("dotnet-install");
+    const dni = await this.pluginManager.findPackage("calc");
     const plugin = await this.pluginManager.installPackage(dni);
-    console.log(`Location: ${plugin.location}`);
+    console.log(`Location: ${plugin.definition}`);
+
+    const dni2 = await this.pluginManager.findPackage("dotnet-install");
+    //const plugin2 = await this.pluginManager.installPackage(dni2);
+    //console.log(`Location: ${plugin2.location}`);
 
   }
 }

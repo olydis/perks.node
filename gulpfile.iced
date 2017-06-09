@@ -53,7 +53,7 @@ Import
     "unpack" : [ 'polyfill' ]
     "eventing" : [ 'polyfill' ]
     "async-io" : [ 'polyfill' ]
-    "plugin" : [ 'polyfill' ]
+    "plugin" : [ 'polyfill' , "dotnet-install" , "async-io"]
 
 task 'init-deps', '',(done)->
   for each of Dependencies 

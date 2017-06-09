@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as npm from 'npm'
+import { config, load, commands } from 'npm'
 import * as hgi from 'hosted-git-info'
 import * as childProcess from 'child_process'
 import * as asyncIO from '@microsoft.azure/async-io'
@@ -11,19 +11,26 @@ import { Exception, shallowCopy } from '@microsoft.azure/polyfill'
 import * as npa from 'npm-package-arg'
 import * as u from 'util';
 import * as os from 'os';
+import * as dotnet from "dotnet-install"
+
+import * as semver from 'semver';
+
 
 import * as path from 'path';
 import * as fetch from "npm/lib/fetch-package-metadata";
 
-const npm_config = new Promise<any>((r, j) => {
-  npm.load({
+type Config = typeof config;
+process.chdir("c:/tmp");
+
+const npm_config = new Promise<Config>((r, j) => {
+  load({
+    prefix: "c:/tmp/prefixed",
     registry: "https://registry.npmjs.org/"
   }, (e, c) => {
     //console.log("back from load : " + c)
-    r();
+    r(c);
   });
 });
-
 
 export class UnresolvedPackageException extends Exception {
   constructor(packageId: string) {
@@ -39,6 +46,19 @@ export class InvalidPackageIdentityException extends Exception {
   }
 }
 
+export class PackageInstallationException extends Exception {
+  constructor(name: string, version: string, message: string) {
+    super(`Package '${name}' - '${version}' failed to install:\n  ${message}`, 1);
+    Object.setPrototypeOf(this, PackageInstallationException.prototype);
+  }
+}
+export class UnsatisfiedEngineException extends Exception {
+  constructor(name: string, version: string) {
+    super(`Unable to find matching engine '${name}' - '${version}'`, 1);
+    Object.setPrototypeOf(this, UnsatisfiedEngineException.prototype);
+  }
+}
+
 
 /**
  * A Package is a representation of a npm package.
@@ -51,7 +71,6 @@ export interface Package {
   version: string;
   source: string;
   engines: any;
-
 }
 
 /** 
@@ -63,18 +82,8 @@ export interface Plugin extends Package {
   location: string;
 }
 
-function npmInstall(...inputs): Promise<Array<string>> {
-  return new Promise((r, j) => {
-    npm.commands.install(inputs, (err, r1, r2, r3, r4) => {
-
-      if (err) {
-        console.log(err);
-        j(err);
-      }
-      console.log(r1);
-      r([r1, r2, r3, r4]);
-    });
-  });
+function npmInstall(name: string, version: string, packageSpec: string): Promise<Array<string>> {
+  return new Promise((r, j) => commands.install([packageSpec], (err, r1, r2, r3, r4) => err ? j(new PackageInstallationException(name, version, err.message)) : r([r1, r2, r3, r4])));
 }
 
 async function fetchPackageMetadata(spec: string, where: string, opts: any): Promise<any> {
@@ -114,6 +123,25 @@ export class PluginManager {
 
   }
 
+  public async installEngine(name: string, version: string): Promise<any> {
+    switch (name) {
+      case "dotnet":
+        const selectedVersion = semver.maxSatisfying(dotnet.getAllReleasesAndVersions(), version, true)
+        if (!selectedVersion) {
+          throw new UnsatisfiedEngineException(name, version)
+        }
+        const os = dotnet.detectOperatingSystem(selectedVersion);
+        if (!os) {
+
+        }
+        break;
+      case "node":
+      case "npm":
+        // no worries with these for now
+        break
+    }
+  }
+
   public async findPackage(name: string, version: string = "latest"): Promise<Package> {
     // version can be a version or any one of the formats that 
     // npm accepts (path, targz, git repo)
@@ -137,24 +165,43 @@ export class PluginManager {
   }
 
   public async installPackage(pkg: Package): Promise<Plugin> {
-
+    const cc = <any>await npm_config;
     const plugin = <Plugin>shallowCopy(pkg);
-    plugin.location = `${this.installationPath}/${pkg.id}`;
+    plugin.location = path.normalize(`${this.installationPath}/${pkg.id}`);
+
+    // change directory
+    const cwd = process.cwd();
     process.chdir(this.installationPath);
 
-    await new Promise<any>((r, j) => {
-      npm.load({
-        registry: "https://registry.npmjs.org/",
-        prefix: plugin.location,
+    try {
+      // set the prefix to the target location
+      cc.localPrefix = plugin.location;
+      cc.globalPrefix = plugin.location;
+      cc.prefix = plugin.location;
 
-      }, (e, c) => {
-        //console.log("back from load : " + c)
-        r();
-      });
-    });
+      // run NPM INSTALL for the package.
+      const results = await npmInstall(pkg.name, pkg.version, plugin.source);
 
-    await npmInstall(plugin.source);
+      // load the package information into the definition.
+      plugin.definition = require(`${plugin.location}/node_modules/${plugin.name}/package.json`);
+    } catch (e) {
+      // clean up the attempted install directory
+      if (await asyncIO.isDirectory(plugin.location)) {
+        await asyncIO.rmdir(plugin.location);
+      }
 
+      if (e instanceof Exception) {
+        throw Exception
+      }
+
+      if (e instanceof Error) {
+        throw new PackageInstallationException(pkg.name, pkg.version, e.message);
+      }
+      throw new PackageInstallationException(pkg.name, pkg.version, `${e}`);
+    }
+    finally {
+      process.chdir(cwd);
+    }
     return plugin;
   }
 
