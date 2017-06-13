@@ -10,9 +10,10 @@ import * as fs from 'fs';
 import { FrameworkNotInstalledException, UnsupportedPlatformException, UnknownFramework } from "./exception"
 import * as req from 'request';
 import { unpack } from '@microsoft.azure/unpack'
-import { IEvent, EventEmitter, EventEmitterPromise } from '@microsoft.azure/eventing'
+import { IEvent, EventEmitter, EventEmitterPromise, ProgressPromise } from '@microsoft.azure/eventing'
 import { exists, readdir, rmdir } from '@microsoft.azure/async-io'
 import * as path from 'path'
+export { ProgressPromise } from '@microsoft.azure/eventing';
 
 var progress = require('request-progress');
 
@@ -22,25 +23,6 @@ polyfill.polyfilled;
 // load framework definitions
 const frameworks = require("../frameworks.json");
 
-export class ProgressPromise extends EventEmitterPromise<boolean> {
-
-  @EventEmitter.Event public Progress: IEvent<ProgressPromise, number>;
-  @EventEmitter.Event public End: IEvent<ProgressPromise, null>;
-  @EventEmitter.Event public Start: IEvent<ProgressPromise, null>;
-  private started: boolean = false;
-
-  /* @internal */ public SetProgress(percent: number) {
-    if (!this.started) {
-      this.started = true;
-      this.Start.Dispatch(null);
-    }
-    this.Progress.Dispatch(percent);
-  }
-
-  /* @internal */ public SetEnd() {
-    this.End.Dispatch(null);
-  }
-}
 
 function contains(item: string, collection: Array<any>): boolean {
   for (const each in collection) {
@@ -154,16 +136,15 @@ export async function isInstalled(version: string, folder: string = path.normali
   return (await listInstalledFrameworkRevisions(folder)).indexOf(version) > -1;
 }
 
-export function installFramework(version: string, operatingSystem: string, architecture: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`), force: boolean = false): ProgressPromise {
+export function installFramework(version: string, operatingSystem: string, architecture: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`), force: boolean = false): ProgressPromise<void> {
   version = getReleaseFromVersion(version);
   const URL = getDownloadUrl(version, operatingSystem, architecture);
   let rq = progress(req(URL), { delay: 500, throttle: 500 });
 
   const result = new ProgressPromise(isInstalled(version, folder).then(async (i) => {
     if (force || !i) {
-      return await unpack(rq, folder)
+      await unpack(rq, folder)
     }
-    return true;
   }));
 
   rq.on("progress", (state: any) => {

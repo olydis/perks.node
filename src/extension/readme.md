@@ -1,4 +1,4 @@
-# Project: @microsoft.azure/plugin
+# Project: @microsoft.azure/extension
 
 This package contains common code for the developer tools for generating Azure SDKs.
 
@@ -7,7 +7,7 @@ Including:
 - dotnet-install
 
 ### Description
-Plugin
+ExtensionManager
 
 ----
 

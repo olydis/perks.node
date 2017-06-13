@@ -37,7 +37,7 @@ task 'build', 'typescript', (done)->
       
     .pipe foreach (each,next ) ->
       fn = filename each.path
-      deps =  ("compile/typescript/#{d}" for d in (global.Dependencies[fn] || []) )
+      deps =  ("compile/typescript/#{d.substring(d.indexOf('/')+1)}" for d in (global.Dependencies[fn] || []) )
       
       task 'compile/typescript', fn,deps, (fin) ->
         execute "#{basefolder}/node_modules/.bin/tsc --project #{each.path} ", {cwd: each.path }, (code,stdout,stderr) ->
@@ -61,7 +61,7 @@ task 'npm-install', '', ['init-deps'], (done)->
       
     .pipe foreach (each,next ) ->
       fn = filename each.path
-      deps =  ("npm-install/#{d}" for d in (global.Dependencies[fn] || []) )
+      deps =  ("npm-install/#{d.substring(d.indexOf('/')+1)}" for d in (global.Dependencies[fn] || []) )
       
       task 'npm-install', fn,deps, (fin) ->
         echo "Running npm install for #{each.path}."

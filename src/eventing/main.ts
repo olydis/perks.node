@@ -4,6 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as events from "events";
+import { Exception } from "@microsoft.azure/polyfill"
+
+export class UnintializedPromiseException extends Exception {
+  constructor(message: string = "Promise was not initialized prior to use.", public exitCode: number = 1) {
+    super(message, exitCode);
+    Object.setPrototypeOf(this, UnintializedPromiseException.prototype);
+  }
+}
 
 export interface IEvent<TSender extends events.EventEmitter, TArgs> {
   Subscribe(fn: (sender: TSender, args: TArgs) => void): () => void;
@@ -82,17 +90,67 @@ export class EventEmitter extends events.EventEmitter {
 }
 
 export class EventEmitterPromise<T> extends EventEmitter implements Promise<T> {
-  public constructor(private promise: Promise<T>) {
+  public constructor(private promise: Promise<T> | undefined) {
     super();
   }
 
+  public initialize(promise: Promise<T>) {
+    this.promise = promise;
+    return this;
+  }
+
   get [Symbol.toStringTag]() {
+    if (!this.promise) {
+      throw new UnintializedPromiseException();
+    }
     return this.promise[Symbol.toStringTag];
   }
   then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2> {
+    if (!this.promise) {
+      throw new UnintializedPromiseException();
+    }
     return this.promise.then(onfulfilled, onrejected);
   };
   catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): Promise<T | TResult> {
+    if (!this.promise) {
+      throw new UnintializedPromiseException();
+    }
     return this.promise.catch(onrejected);
+  }
+}
+
+export interface IProgress<T> {
+  Progress: IEvent<ProgressPromise<T>, number>;
+  End: IEvent<ProgressPromise<T>, null>;
+  Start: IEvent<ProgressPromise<T>, null>;
+  Message: IEvent<ProgressPromise<T>, string>;
+}
+
+export class ProgressPromise<T> extends EventEmitterPromise<T> implements IProgress<T> {
+
+  @EventEmitter.Event public Progress: IEvent<ProgressPromise<T>, number>;
+  @EventEmitter.Event public End: IEvent<ProgressPromise<T>, null>;
+  @EventEmitter.Event public Start: IEvent<ProgressPromise<T>, null>;
+  @EventEmitter.Event public Message: IEvent<ProgressPromise<T>, string>;
+
+  private started: boolean = false;
+  public constructor(promise: Promise<T> | undefined = undefined) {
+    super(promise);
+  }
+
+  public SetProgress(percent: number) {
+    if (!this.started) {
+      this.started = true;
+      this.Start.Dispatch(null);
+    }
+    this.Progress.Dispatch(percent);
+  }
+
+  public SetEnd() {
+    this.End.Dispatch(null);
+  }
+
+  public SendMessage(text: string) {
+    this.Message.Dispatch(text);
   }
 }

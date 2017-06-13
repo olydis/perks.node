@@ -48,18 +48,22 @@ Import
             n null
 
   Dependencies:
-    "dotnet-install" : ['console', 'polyfill', 'unpack', 'eventing', "async-io"]
-    "console" : [ 'polyfill' ]
-    "unpack" : [ 'polyfill' ]
-    "eventing" : [ 'polyfill' ]
-    "async-io" : [ 'polyfill' ]
-    "plugin" : [ 'polyfill' , "dotnet-install" , "async-io"]
+    "dotnet-install" : ['@microsoft.azure/console', '@microsoft.azure/polyfill', '@microsoft.azure/unpack', '@microsoft.azure/eventing', "@microsoft.azure/async-io"]
+    "console" : [ '@microsoft.azure/polyfill' ]
+    "unpack" : [ '@microsoft.azure/polyfill' ]
+    "eventing" : [ '@microsoft.azure/polyfill' ]
+    "async-io" : [ '@microsoft.azure/polyfill' ]
+    "extension" : [ '@microsoft.azure/polyfill' , "dotnet-install" , "@microsoft.azure/async-io", '@microsoft.azure/eventing']
 
 task 'init-deps', '',(done)->
   for each of Dependencies 
-    mkdir "-p", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure" if !test "-d", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure"
+    mkdir "-p", "#{basefolder}/src/#{each}/node_modules" if !test "-d", "#{basefolder}/src/#{each}/node_modules"
     for item in Dependencies[each]
-      mklink "#{basefolder}/src/#{each}/node_modules/@microsoft.azure/#{item}" , "#{basefolder}/src/#{item}"
+      mkdir "-p", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure" if !test "-d", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure"
+      i = item.substring item.indexOf('/')+1
+
+      if test "-d" ,"#{basefolder}/src/#{i}" 
+        mklink "#{basefolder}/src/#{each}/node_modules/#{item}" , "#{basefolder}/src/#{i}" 
   done()
 
 task 'init',"",[ "init-deps" ], (done)->

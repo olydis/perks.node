@@ -1,7 +1,7 @@
 {
-  "name": "@microsoft.azure/plugin",
+  "name": "@microsoft.azure/extension",
   "version": "1.0.0",
-  "description": "NPM-Based plugin aquisition (for Azure Open Source Projects)",
+  "description": "NPM-Based extension aquisition (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
   "scripts": {
@@ -28,18 +28,19 @@
   "devDependencies": {
     "@types/node": "^7.0.5",
     "@types/npm": "^2.0.28",
-    "@types/semver" :"^5.3.31",
+    "@types/semver": "^5.3.31",
     "mocha-typescript": "^1.1.4",
     "mocha": "3.2.0",
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
     "@microsoft.azure/async-io": "^1.0.0",
+    "@microsoft.azure/eventing": "^1.0.0",
     "@microsoft.azure/polyfill": "^1.0.0",
     "dotnet-install": "^1.0.3",
     "hosted-git-info": "^2.4.2",
     "npm": "^5.0.3",
-    "semver":"^5.3.0",
-    "npm-package-arg": "^5.1.2"
+    "npm-package-arg": "^5.1.2",
+    "semver": "^5.3.0"
   }
 }

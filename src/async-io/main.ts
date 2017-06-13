@@ -8,7 +8,6 @@ import * as path from "path";
 import * as promisify from "pify";
 import { OutstandingTaskAwaiter, Exception } from '@microsoft.azure/polyfill'
 
-
 export class PathNotFoundException extends Exception {
   constructor(path: string, public exitCode: number = 1) {
     super(`File '${path}' not found.`, exitCode);
@@ -30,7 +29,7 @@ export class PathIsNotDirectoryException extends Exception {
   }
 }
 
-export const mkdir: (path: string | Buffer) => Promise<void> = promisify(fs.mkdir);
+
 export const exists: (path: string | Buffer) => Promise<boolean> = path => new Promise<boolean>((r, j) => fs.stat(path, (err: NodeJS.ErrnoException, stats: fs.Stats) => err ? r(false) : r(true)));
 export const readdir: (path: string | Buffer) => Promise<Array<string>> = promisify(fs.readdir);
 export const close: (fd: number) => Promise<void> = promisify(fs.close);
@@ -40,6 +39,12 @@ export const lstat: (path: string | Buffer) => Promise<fs.Stats> = promisify(fs.
 
 const fs_rmdir: (path: string | Buffer) => Promise<void> = promisify(fs.rmdir);
 const unlink: (path: string | Buffer) => Promise<void> = promisify(fs.unlink);
+const fs_mkdir: (path: string | Buffer) => Promise<void> = promisify(fs.mkdir);
+export async function mkdir(path: string) {
+  if (!await isDirectory(path)) {
+    fs_mkdir(path);
+  }
+}
 
 export async function isDirectory(dirPath: string): Promise<boolean> {
   if (await exists(dirPath)) {
