@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/unpack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zip/GZ unpacking library/tools (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -32,7 +32,7 @@
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill" :"^1.0.0",
+    "@microsoft.azure/polyfill": "^1.0.0",
     "tar.gz2": "^1.0.0",
     "unzipper": "^0.8.4",
     "buffer-peek-stream": "^1.0.1"

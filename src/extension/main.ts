@@ -348,7 +348,7 @@ export class ExtensionManager {
     return extension;
   }
 
-  public async removePackage(extension: Extension): Promise<void> {
+  public async removeExtension(extension: Extension): Promise<void> {
     if (await asyncIO.isDirectory(extension.location)) {
       await asyncIO.rmdir(extension.location);
     }

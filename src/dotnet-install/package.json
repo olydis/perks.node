@@ -1,6 +1,6 @@
 {
   "name": "dotnet-install",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "Platform Agnostic utility/library to install dotnet frameworks into a folder",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",

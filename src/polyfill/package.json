@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/polyfill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Polyfill functions for Azure Open Source Projects",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -23,9 +23,7 @@
     "url": "https://github.com/Azure/perks.node/issues"
   },
   "homepage": "https://github.com/Azure/perks.node#readme",
-  "devDependencies": {
-    
-  },
+  "devDependencies": {},
   "dependencies": {
     "babel-polyfill": "^6.23.0",
     "source-map-support": "^0.4.15"
