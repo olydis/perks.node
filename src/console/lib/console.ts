@@ -7,6 +7,7 @@ import * as marked from "marked";
 import * as chalk from "chalk";
 import * as moment from "moment";
 import * as yargs from 'yargs';
+import * as util from 'util'
 
 const markedTerminal = require("marked-terminal");
 
@@ -34,6 +35,11 @@ marked.setOptions({
 
 (<any>global).console_monkeypatched = false;
 
+function rtrim(str: string, trimRegEx?: string | undefined): string {
+  return trimRegEx ? str.replace(new RegExp(trimRegEx + "*$"), '') : str.replace(/\s*$/, '');
+}
+
+
 export function enable(): boolean {
 
   if (!(<any>global).console_monkeypatched) {
@@ -50,35 +56,60 @@ export function enable(): boolean {
 
     console.log = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
-        process.stdout.write(marked(`${message}`.trim()).trim() + '\n');
+        if (process.stdout.isTTY) {
+          process.stdout.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        } else {
+          process.stdout.write(util.format(message, ...optionalParams) + '\n');
+        }
+
       }
     };
 
     console.info = (message?: any, ...optionalParams: any[]) => {
       if (_verbose) {
-        process.stdout.write(chalk.bold.magenta(`[${Timestamp}] `) + marked(`${message}`.trim()).trim() + '\n');
+        if (process.stdout.isTTY) {
+          process.stdout.write(chalk.bold.magenta(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        } else {
+          process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
+        }
       }
     };
 
     console.debug = (message?: any, ...optionalParams: any[]) => {
       if (_debug) {
-        process.stdout.write(chalk.bold.yellow(`[${Timestamp}] `) + marked(`${message}`.trim()).trim() + '\n');
+        if (process.stdout.isTTY) {
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        } else {
+          process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
+        }
       }
     };
 
     console.error = (message?: any, ...optionalParams: any[]) => {
-      process.stderr.write(chalk.bold.red(marked(`${message}`.trim()).trim()) + '\n');
+      if (process.stderr.isTTY) {
+        process.stderr.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+      } else {
+        process.stderr.write(util.format(message, ...optionalParams) + '\n');
+      }
     };
 
     console.trace = (message?: any, ...optionalParams: any[]) => {
       if (_debug) {
-        process.stdout.write(chalk.bold.yellow(`[${Timestamp}] `) + marked(`${message}`.trim()).trim() + '\n');
+        if (process.stdout.isTTY) {
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        } else {
+          process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
+        }
       }
     };
 
     console.warn = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
-        process.stdout.write(chalk.bold.yellow(`[${Timestamp}] `) + marked(`${message}`.trim()).trim() + '\n');
+        if (process.stdout.isTTY) {
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        } else {
+          process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
+        }
       }
     }
     (<any>global).console_monkeypatched = true;
@@ -95,6 +126,15 @@ export function Timestamp(): string {
   const ss = `${m.getSeconds()}`;
 
   return chalk.red(`${chalk.gray(hh)}:${chalk.gray(mm)}:${chalk.gray(ss)}`);
+}
+
+export function NoColorTimestamp(): string {
+  const m = new Date();
+  const hh = `${m.getHours()}`;
+  const mm = `${m.getMinutes()}`;
+  const ss = `${m.getSeconds()}`;
+
+  return `${hh}:${mm}:${ss}`;
 }
 
 export interface IYargs extends yargs.Argv {

@@ -68,8 +68,5 @@ polyfill.polyfilled;
       // make sure we have one extension installed and that it is echo-cli (for testing)
       assert.equal(each.name, "echo-cli");
     }
-
   }
-
-
 }

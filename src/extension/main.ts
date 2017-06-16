@@ -168,8 +168,38 @@ export class Extension extends Package {
     return path.normalize(`${this.modulePath}/package.json`);
   }
 
+  /**
+ * the path to the readme.md configuration file for the extension.
+ */
+  public get configurationPath(): Promise<string> {
+    return (async () => {
+      var items = await asyncIO.readdir(this.modulePath);
+      for (const each of items) {
+        if (/^readme.md$/i.exec(each)) {
+          const fullPath = path.normalize(`${this.modulePath}/${each}`);
+          if (await asyncIO.isFile(fullPath)) {
+            return fullPath;
+          }
+        }
+      }
+      return "";
+    })();
+  }
+
   /** the loaded package.json information */
-  /* @internal */ public definition: any;
+  public get definition(): any {
+    return require(this.packageJsonPath);
+  }
+
+  public get configuration(): Promise<string> {
+    return (async () => {
+      const cfgPath = await this.configurationPath;
+      if (cfgPath) {
+        return await asyncIO.readFile(cfgPath);
+      }
+      return '';
+    })();
+  }
 }
 
 function npmInstall(name: string, version: string, packageSpec: string): Promise<Array<string>> {
@@ -322,9 +352,7 @@ export class ExtensionManager {
 
       // run NPM INSTALL for the package.
       const results = await npmInstall(pkg.name, pkg.version, extension.source);
-
-      // load the package information into the definition.
-      extension.definition = require(`${extension.location}/node_modules/${extension.name}/package.json`);
+      return extension;
     } catch (e) {
       // clean up the attempted install directory
       if (await asyncIO.isDirectory(extension.location)) {
@@ -336,16 +364,15 @@ export class ExtensionManager {
       }
 
       if (e instanceof Error) {
-        throw new PackageInstallationException(pkg.name, pkg.version, e.message);
+        throw new PackageInstallationException(pkg.name, pkg.version, e.message + e.stack);
       }
       throw new PackageInstallationException(pkg.name, pkg.version, `${e}`);
     }
     finally {
       process.chdir(cwd);
+      progress.Progress.Dispatch(100);
+      progress.End.Dispatch(null);
     }
-    progress.Progress.Dispatch(100);
-    progress.End.Dispatch(null);
-    return extension;
   }
 
   public async removeExtension(extension: Extension): Promise<void> {

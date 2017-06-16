@@ -31,13 +31,10 @@ task 'build', 'typescript', (done)->
   typescriptProjectFolders()
     .on 'end', -> 
       run 'compile/typescript', done
-
-    .pipe where (each ) -> 
-      return test "-f", "#{each.path}/tsconfig.json"
       
     .pipe foreach (each,next ) ->
       fn = filename each.path
-      deps =  ("compile/typescript/#{d.substring(d.indexOf('/')+1)}" for d in (global.Dependencies[fn] || []) )
+      deps =  ("compile/typescript/#{d.substring(d.indexOf('/')+1)}" for d in (global.dependencies[fn] || []) )
       
       task 'compile/typescript', fn,deps, (fin) ->
         execute "#{basefolder}/node_modules/.bin/tsc --project #{each.path} ", {cwd: each.path }, (code,stdout,stderr) ->
@@ -55,13 +52,10 @@ task 'npm-install', '', ['init-deps'], (done)->
     .on 'end', -> 
       run 'npm-install', ->
         done()
-
-    .pipe where (each ) -> 
-      return test "-f", "#{each.path}/tsconfig.json"
-      
+     
     .pipe foreach (each,next ) ->
       fn = filename each.path
-      deps =  ("npm-install/#{d.substring(d.indexOf('/')+1)}" for d in (global.Dependencies[fn] || []) )
+      deps =  ("npm-install/#{d.substring(d.indexOf('/')+1)}" for d in (global.dependencies[fn] || []) )
       
       task 'npm-install', fn,deps, (fin) ->
         echo "Running npm install for #{each.path}."
@@ -73,3 +67,25 @@ task 'npm-install', '', ['init-deps'], (done)->
       next null
     return null
 
+task 'publish', '', ['init-deps'], (done)-> 
+  global.threshold =1
+  typescriptProjectFolders()
+    .on 'end', -> 
+      run 'publish', ->
+        done()
+     
+    .pipe foreach (each,next ) ->
+      fn = filename each.path
+      task 'publish', fn, (fin) ->
+        echo "Running npm publish for #{each.path}."
+        exec "#{basefolder}/node_modules/.bin/npm publish", {cwd: each.path, silent:true }, (code,stdout,stderr) ->
+          echo stdout
+          if( code )
+            if( stderr.indexOf "previously" > -1 )
+              echo warning "Project #{chalk.green(fn)} wasn't published - it's already published at that version."
+            else 
+              echo error "Project #{fn} wasn't published - #{stderr}"
+          fin()
+
+      next null
+    return null    

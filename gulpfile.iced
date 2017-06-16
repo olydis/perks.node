@@ -14,57 +14,19 @@ Import
 
   typescriptProjectFolders: ()->
     source ["./src/*" ]
-    # source ['src/polyfill', 'src/console', 'src/unpack', 'src/dotnet-install']
-
-  typescriptProjects: () -> 
-    typescriptProjectFolders()
-      .pipe foreach (each,next,more)=>
-        source "#{each.path}/tsconfig.json"
-          .on 'end', -> 
-            next null
-          .pipe foreach (e,n)->
-            more.push e
-            n null
-  
-  generatedFiles: () -> 
-    typescriptProjectFolders()
-      .pipe foreach (each,next,more)=>
-        source(["#{each.path}/**/*.js","#{each.path}/**/*.d.ts" ,"#{each.path}/**/*.js.map", "!**/node_modules/**","!src/polyfill/*-*.js"])
-          .on 'end', -> 
-            next null
-          .pipe foreach (e,n)->
-            more.push e
-            n null
+       .pipe where (each ) -> 
+          return test "-f", "#{each.path}/tsconfig.json"
         
   typescriptFiles: () -> 
     typescriptProjectFolders()
       .pipe foreach (each,next,more)=>
-        source(["#{each.path}/**/*.ts", "#{each.path}/**/*.json", "!#{each.path}/node_modules/**"])
+        source(["#{each.path}/**/*.ts", "#{each.path}/**/*.json", "!#{each.path}/node_modules/**","!#{each.path}/dist/**"])
         .on 'end', -> 
             next null
         .pipe foreach (e,n)->
             e.base = each.base
             more.push e
             n null
-
-  Dependencies:
-    "dotnet-install" : ['@microsoft.azure/console', '@microsoft.azure/polyfill', '@microsoft.azure/unpack', '@microsoft.azure/eventing', "@microsoft.azure/async-io"]
-    "console" : [ '@microsoft.azure/polyfill' ]
-    "unpack" : [ '@microsoft.azure/polyfill' ]
-    "eventing" : [ '@microsoft.azure/polyfill' ]
-    "async-io" : [ '@microsoft.azure/polyfill' ]
-    "extension" : [ '@microsoft.azure/polyfill' , "dotnet-install" , "@microsoft.azure/async-io", '@microsoft.azure/eventing']
-
-task 'init-deps', '',(done)->
-  for each of Dependencies 
-    mkdir "-p", "#{basefolder}/src/#{each}/node_modules" if !test "-d", "#{basefolder}/src/#{each}/node_modules"
-    for item in Dependencies[each]
-      mkdir "-p", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure" if !test "-d", "#{basefolder}/src/#{each}/node_modules/@microsoft.azure"
-      i = item.substring item.indexOf('/')+1
-
-      if test "-d" ,"#{basefolder}/src/#{i}" 
-        mklink "#{basefolder}/src/#{each}/node_modules/#{item}" , "#{basefolder}/src/#{i}" 
-  done()
 
 task 'init',"",[ "init-deps" ], (done)->
   Fail "YOU MUST HAVE NODEJS VERSION GREATER THAN 6.9.5" if semver.lt( process.versions.node , "6.9.5" )
@@ -99,5 +61,61 @@ task 'init',"",[ "init-deps" ], (done)->
 
       next null
 
+    return null
   return null
-return null
+
+
+task 'init-list', '', (done)-> 
+  typescriptProjectFolders()
+    .pipe foreach (each,next)->
+      echo each.path
+      next null
+
+# ensures directories for sibling projects are symlinked in place and creates map of dependencies.
+task 'init-deps', '', (done)->
+  global.projects = {}
+  global.dependencies = {}
+  typescriptProjectFolders()
+    .on 'end', -> 
+      # we've loaded their project.json files.
+      # find dependencies
+      for p of global.projects 
+        project = global.projects[p]
+
+        # make sure the project has a node_modules folder
+        mkdir "-p", "#{basefolder}/src/#{project.name}/node_modules" if !test "-d", "#{basefolder}/src/#{project.name}/node_modules"
+
+        for dep of project.json.dependencies
+          global.dependencies[project.name] = []
+          if global.projects[dep] # the dependency is local to this solution
+            global.dependencies[project.name].push( dep )
+            # symlink sibling projects
+            mklink "#{basefolder}/src/#{project.name}/node_modules/#{dep}", global.projects[dep].folder            
+      done()
+
+    .pipe foreach (each,next) -> 
+      prjson= require "#{each.path}/package.json"  
+      fullname=prjson.name
+
+      global.projects[ fullname ] = {
+        name: basename each.path
+        fullname: fullname
+        folder: each.path
+        json: prjson
+        orig: JSON.stringify(prjson,null,2)
+        version: prjson.version
+        dependencies: []
+      }
+  return null
+
+task 'update-dependencies', 'Updates dependency information in package.json files.',['init-deps'], ()-> 
+  for p of global.projects 
+    project = global.projects[p]
+    for dep of project.json.dependencies
+      if global.projects[dep] 
+        project.json.dependencies[dep] = "^#{global.projects[dep].version}"
+        text = JSON.stringify(global.projects[dep].json,null,2)
+        if( text != global.projects[dep].orig )
+          text.to("#{global.projects[dep].folder}/package.json" )
+
+

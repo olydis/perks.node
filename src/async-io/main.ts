@@ -33,7 +33,7 @@ export class PathIsNotDirectoryException extends Exception {
 export const exists: (path: string | Buffer) => Promise<boolean> = path => new Promise<boolean>((r, j) => fs.stat(path, (err: NodeJS.ErrnoException, stats: fs.Stats) => err ? r(false) : r(true)));
 export const readdir: (path: string | Buffer) => Promise<Array<string>> = promisify(fs.readdir);
 export const close: (fd: number) => Promise<void> = promisify(fs.close);
-export const readFile: (filename: string) => Promise<string> = promisify(fs.readFile);
+
 export const writeFile: (filename: string, content: string) => Promise<void> = (filename, content) => Promise.resolve(fs.writeFileSync(filename, content)); // for some reason writeFile only produced empty files
 export const lstat: (path: string | Buffer) => Promise<fs.Stats> = promisify(fs.lstat);
 
@@ -44,6 +44,12 @@ export async function mkdir(path: string) {
   if (!await isDirectory(path)) {
     fs_mkdir(path);
   }
+}
+
+const fs_readFile: (filename: string, encoding: string, ) => Promise<string> = promisify(fs.readFile);
+
+export async function readFile(filename: string): Promise<string> {
+  return fs_readFile(filename, "utf-8");
 }
 
 export async function isDirectory(dirPath: string): Promise<boolean> {

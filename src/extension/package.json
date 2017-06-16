@@ -1,11 +1,12 @@
 {
   "name": "@microsoft.azure/extension",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "NPM-Based extension aquisition (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
   "scripts": {
-    "test": "./node_modules/.bin/mocha dist/test --timeout 125000"
+    "test": "./node_modules/.bin/mocha dist/test --timeout 125000",
+    "postversion": "gulp update-dependencies"
   },
   "repository": {
     "type": "git",

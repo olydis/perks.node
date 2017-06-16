@@ -51,8 +51,10 @@ module.exports =
 
   mklink: (link,target) ->
     # unlink link
-    if ! test "-d", link 
-      fs.symlinkSync target, link, "junction"
+    
+    # ensure parent folder for symlink
+    mkdir "-p", path.dirname link if ! test "-d", path.dirname link
+    fs.symlinkSync target, link, "junction" if ! test "-d", link 
 
   unlink: (link) ->
     if test "-d", link 
@@ -83,7 +85,7 @@ module.exports =
     
     # add the new task.
     # gulp.task name, deps, fn
-    skip = (name.startsWith "init") or (name.startsWith "npm-install") or (name.startsWith "clean") or (name is "copy-dts-files") or (name is "nuke")
+    skip = (name.startsWith "init") or (name.startsWith "npm-install") or (name.startsWith "clean") or (name is "copy-dts-files") or (name is "nuke") or (name is "update-dependencies")
     
     if !skip
       deps.unshift "init" 
@@ -153,6 +155,9 @@ module.exports =
     return '' if not path 
     p = splitPath path
     return p.basename
+
+  foldername: (p) ->
+   return path.basename path.dirname p
 
   exists: (path) ->
     return test '-f', path 
@@ -272,7 +277,7 @@ module.exports =
           echo warning "(stdout)" 
           echo warning stdout
 
-        Fail "Execute Task () failed, fast exit"
+        Fail "Execute Task failed, fast exit"
       callback(code,stdout,stderr)
 
     proc.stdout.on 'data', ondata if ondata

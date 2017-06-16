@@ -8,6 +8,9 @@
     "type": "git",
     "url": "git+https://github.com/Azure/perks.node.git"
   },
+  "scripts": {
+    "postversion" : "gulp update-dependencies"
+  },
   "keywords": [
     "perks",
     "polyfill",

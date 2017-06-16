@@ -1,11 +1,12 @@
 {
   "name": "@microsoft.azure/console",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Common reusable libraries and tools that has been accumulating for Azure Open Source Projects",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
   "scripts": {
-    "test": "./node_modules/.bin/mocha dist/test"
+    "test": "./node_modules/.bin/mocha dist/test",
+    "postversion": "gulp update-dependencies"
   },
   "repository": {
     "type": "git",
@@ -36,7 +37,7 @@
     "mocha": "3.2.0"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.0",
+    "@microsoft.azure/polyfill": "^1.0.1",
     "chalk": "^1.1.2",
     "marked": "^0.3.6",
     "marked-terminal": "^2.0.0",
