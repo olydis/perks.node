@@ -108,14 +108,20 @@ task 'init-deps', '', (done)->
       }
   return null
 
-task 'update-dependencies', 'Updates dependency information in package.json files.',['init-deps'], ()-> 
+updateVersions = () ->
+  again = false 
   for p of global.projects 
     project = global.projects[p]
     for dep of project.json.dependencies
-      if global.projects[dep] 
-        project.json.dependencies[dep] = "^#{global.projects[dep].version}"
-        text = JSON.stringify(global.projects[dep].json,null,2)
-        if( text != global.projects[dep].orig )
-          text.to("#{global.projects[dep].folder}/package.json" )
+      if global.projects[dep]
+        if project.json.dependencies[dep] != "^#{global.projects[dep].version}" 
+          project.json.dependencies[dep] = "^#{global.projects[dep].version}"
+          project.json.version = project.json.version.replace(/(.*)\.(.*)/, (a,b,c) -> "#{b}.#{ 1+Number(c) }" )
+          text = JSON.stringify(global.projects[dep].json,null,2)
+          text.to("#{global.projects[dep].folder}/package.json" )  
+          again = true
+  return updateVersions if again
 
-
+task 'update-dependencies', 'Updates dependency information in package.json files.',['init-deps'], ()-> 
+  # First, let's mark every project that 
+  updateVersions()

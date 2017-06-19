@@ -24,12 +24,19 @@ type Config = typeof config;
 
 const npm_config = new Promise<Config>((r, j) => {
   npmlog.stream = { isTTY: false };
+
   npmlog.disableProgress();
   npmlog.disableColor();
   npmlog.resume = () => { };
-  npmlog.pause()
+  npmlog.level = "silent";
+  npmlog.write = () => { };
+  npmlog.info = () => { };
+  npmlog.notice = () => { };
+  npmlog.verbose = () => { };
+  npmlog.silent = () => { };
   npmlog.gauge.enable = () => { };
   npmlog.gauge.disable();
+  // console.log(npmlog);
   // console.log(`${u.inspect(npmlog)}`);
   /*
     const m = {};
@@ -49,7 +56,7 @@ const npm_config = new Promise<Config>((r, j) => {
   load({
     // prefix: "c:/tmp/prefixed",
     loglevel: 'silent',
-
+    parseable: true,
     registry: "https://registry.npmjs.org/"
   }, (e, c) => {
     //console.log("back from load : " + c)
@@ -115,7 +122,7 @@ function getPathVariableName() {
  * Once installed, a Package is an Extension
  */
 export class Package {
-  /* @internal */ public constructor(/* @internal */ public packageMetadata: any) {
+  /* @internal */ public constructor(/* @internal */ public packageMetadata: any,/* @internal */ public extensionManager: ExtensionManager) {
 
   }
 
@@ -138,6 +145,14 @@ export class Package {
   get engines(): Array<any> {
     return this.packageMetadata.engines;
   }
+
+  async install(): Promise<Extension> {
+    return this.extensionManager.installPackage(this);
+  }
+
+  get allVersions(): Promise<Array<string>> {
+    return this.extensionManager.getPackageVersions(this.name);
+  }
 }
 
 /** 
@@ -146,7 +161,7 @@ export class Package {
  * */
 export class Extension extends Package {
   /* @internal */ public constructor(pkg: Package, private installationPath: string) {
-    super(pkg.packageMetadata);
+    super(pkg.packageMetadata, pkg.extensionManager);
   }
   /**
    * The installed location the package. 
@@ -200,10 +215,37 @@ export class Extension extends Package {
       return '';
     })();
   }
+
+  async remove(): Promise<void> {
+    return this.extensionManager.removeExtension(this);
+  }
+
+  async start(): Promise<childProcess.ChildProcess> {
+    return this.extensionManager.start(this);
+  }
 }
 
 function npmInstall(name: string, version: string, packageSpec: string): Promise<Array<string>> {
-  return new Promise((r, j) => commands.install([packageSpec], (err, r1, r2, r3, r4) => err ? j(new PackageInstallationException(name, version, err.message)) : r([r1, r2, r3, r4])));
+  const original_write = process.stdout.write;
+  return new Promise((r, j) => {
+    (<any>process.stdout).write = (buffer: Buffer | string, cb?: Function) => { if (cb) cb() };
+    commands.install([packageSpec], (err, r1, r2, r3, r4) => {
+      process.stdout.write = original_write;
+      return err ? j(new PackageInstallationException(name, version, err.message)) : r([r1, r2, r3, r4])
+    })
+  });
+}
+
+
+function npmView(name: string): Promise<Array<any>> {
+  const original_write = process.stdout.write;
+  return new Promise((r, j) => {
+    (<any>process.stdout).write = (buffer: Buffer | string, cb?: Function) => { if (cb) cb() };
+    commands.view([`${name}@*`, "version"], (err, r1, r2, r3, r4) => {
+      process.stdout.write = original_write;
+      return err ? j(new Exception(name)) : r(r1)
+    })
+  });
 }
 
 async function fetchPackageMetadata(spec: string, where: string, opts: any): Promise<any> {
@@ -270,6 +312,11 @@ export class ExtensionManager {
     }
   }
 
+  public async getPackageVersions(name: string): Promise<string[]> {
+    const cc = <any>await npm_config;
+    return Object.getOwnPropertyNames(await npmView(name))
+  }
+
   public async findPackage(name: string, version: string = "latest"): Promise<Package> {
     // version can be a version or any one of the formats that 
     // npm accepts (path, targz, git repo)
@@ -279,7 +326,7 @@ export class ExtensionManager {
     // get the package metadata
     const pm = await fetchPackageMetadata(resolved.raw, process.cwd(), {});
 
-    return new Package(pm);
+    return new Package(pm, this);
   }
 
   public async *getInstalledExtensions(): AsyncIterable<Extension> {
@@ -298,7 +345,7 @@ export class ExtensionManager {
 
             const actualPath = org ? path.normalize(`${fullpath}/node_modules/${org}/${name}`) : path.normalize(`${fullpath}/node_modules/${name}`)
             const pm = await fetchPackageMetadata(actualPath, actualPath, {});
-            yield new Extension(new Package(pm), this.installationPath);
+            yield new Extension(new Package(pm, this), this.installationPath);
           } catch (e) {
             // ignore things that don't look right.
           }

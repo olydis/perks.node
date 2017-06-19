@@ -57,7 +57,7 @@ export function enable(): boolean {
     console.log = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (process.stdout.isTTY) {
-          process.stdout.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+          process.stdout.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
           process.stdout.write(util.format(message, ...optionalParams) + '\n');
         }
@@ -68,7 +68,7 @@ export function enable(): boolean {
     console.info = (message?: any, ...optionalParams: any[]) => {
       if (_verbose) {
         if (process.stdout.isTTY) {
-          process.stdout.write(chalk.bold.magenta(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+          process.stdout.write(chalk.bold.magenta(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
           process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }
@@ -78,7 +78,7 @@ export function enable(): boolean {
     console.debug = (message?: any, ...optionalParams: any[]) => {
       if (_debug) {
         if (process.stdout.isTTY) {
-          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
           process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }
@@ -87,7 +87,7 @@ export function enable(): boolean {
 
     console.error = (message?: any, ...optionalParams: any[]) => {
       if (process.stderr.isTTY) {
-        process.stderr.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+        process.stderr.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
       } else {
         process.stderr.write(util.format(message, ...optionalParams) + '\n');
       }
@@ -96,7 +96,7 @@ export function enable(): boolean {
     console.trace = (message?: any, ...optionalParams: any[]) => {
       if (_debug) {
         if (process.stdout.isTTY) {
-          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
           process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }
@@ -106,7 +106,7 @@ export function enable(): boolean {
     console.warn = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (process.stdout.isTTY) {
-          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams) + '\n'}`))));
+          process.stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
           process.stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }

@@ -35,7 +35,7 @@
     "@types/pify": "0.0.28"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.1",
+    "@microsoft.azure/polyfill": "^1.0.2",
     "pify": "^2.3.0"
   }
 }

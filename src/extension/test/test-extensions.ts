@@ -69,4 +69,12 @@ polyfill.polyfilled;
       assert.equal(each.name, "echo-cli");
     }
   }
+
+  @test async "View Versions"() {
+    // gets a package
+    const pkg = await this.extensionManager.findPackage("echo-cli");
+    // finds out if there are more versions
+    assert.equal((await pkg.allVersions).length > 5, true)
+  }
+
 }

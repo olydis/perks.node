@@ -1,6 +1,6 @@
 {
   "name": "dotnet-install",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Platform Agnostic utility/library to install dotnet frameworks into a folder",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -45,7 +45,7 @@
     "yargs": "^8.0.1"
   },
   "dependencies": {
-    "@microsoft.azure/console": "^1.0.4",
+    "@microsoft.azure/console": "^1.0.6",
     "@microsoft.azure/eventing": "^1.0.1",
     "@microsoft.azure/async-io": "^1.0.2",
     "@microsoft.azure/unpack": "^1.0.1",

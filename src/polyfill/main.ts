@@ -7,7 +7,8 @@ require('source-map-support').install({ hookRequire: true });
 export const polyfilled = true
 export * from './lib/exception'
 export * from './lib/outstanding-task-awaiter'
-
+export * from "./lib/lazy-promise"
+export * from "./lib/lazy"
 
 /** 
  * Creates a shallow copy of a given object by copying the properties to a new object

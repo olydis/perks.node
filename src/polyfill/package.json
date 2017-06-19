@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/polyfill",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Polyfill functions for Azure Open Source Projects",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Azure/perks.node.git"
   },
   "scripts": {
-    "postversion" : "gulp update-dependencies"
+    "postversion": "gulp update-dependencies"
   },
   "keywords": [
     "perks",

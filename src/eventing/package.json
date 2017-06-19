@@ -6,7 +6,7 @@
   "typings": "./dist/main.d.ts",
   "scripts": {
     "test": "./node_modules/.bin/mocha dist/test",
-    "postversion" : "gulp update-dependencies"
+    "postversion": "gulp update-dependencies"
   },
   "repository": {
     "type": "git",
@@ -33,6 +33,6 @@
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.1"
+    "@microsoft.azure/polyfill": "^1.0.2"
   }
 }
