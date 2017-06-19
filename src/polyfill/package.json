@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/polyfill",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Polyfill functions for Azure Open Source Projects",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
