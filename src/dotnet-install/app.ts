@@ -4,7 +4,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as con from "@microsoft.azure/console"
+import { cli, enhanceConsole } from "@microsoft.azure/console"
 import * as os from 'os';
 import * as path from 'path'
 import * as dotnet from "./main"
@@ -34,10 +34,13 @@ const archOption = {
 
 let exitCode: Promise<number> = Promise.resolve(1);
 
+// Add enhancement support for the console.
+enhanceConsole()
+
 async function main() {
 
   try {
-    const args = con.cli
+    const args = cli
       .app("dotnet-install")
       .title("DotNet Framework Installation Utility")
       .copyright("(C) 2017 **Microsoft Corporation.**")

@@ -32,10 +32,10 @@ task 'build', 'typescript', (done)->
     .on 'end', -> 
       run 'compile/typescript', done
       
+
     .pipe foreach (each,next ) ->
       fn = filename each.path
       deps =  ("compile/typescript/#{d.substring(d.indexOf('/')+1)}" for d in (global.dependencies[fn] || []) )
-      
       task 'compile/typescript', fn,deps, (fin) ->
         execute "#{basefolder}/node_modules/.bin/tsc --project #{each.path} ", {cwd: each.path }, (code,stdout,stderr) ->
           if watch 
@@ -67,7 +67,7 @@ task 'npm-install', '', ['init-deps'], (done)->
       next null
     return null
 
-task 'publish', '', ['init-deps'], (done)-> 
+task 'publish', '', ['init-deps', 'build'], (done)-> 
   global.threshold =1
   typescriptProjectFolders()
     .on 'end', -> 

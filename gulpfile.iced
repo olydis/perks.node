@@ -71,10 +71,12 @@ task 'init-list', '', (done)->
       echo each.path
       next null
 
+global.projects = {}
+global.dependencies = {}
+
 # ensures directories for sibling projects are symlinked in place and creates map of dependencies.
 task 'init-deps', '', (done)->
-  global.projects = {}
-  global.dependencies = {}
+  
   typescriptProjectFolders()
     .on 'end', -> 
       # we've loaded their project.json files.
@@ -86,7 +88,6 @@ task 'init-deps', '', (done)->
         mkdir "-p", "#{basefolder}/src/#{project.name}/node_modules" if !test "-d", "#{basefolder}/src/#{project.name}/node_modules"
 
         for dep of project.json.dependencies
-          global.dependencies[project.name] = []
           if global.projects[dep] # the dependency is local to this solution
             global.dependencies[project.name].push( dep )
             # symlink sibling projects
@@ -96,7 +97,7 @@ task 'init-deps', '', (done)->
     .pipe foreach (each,next) -> 
       prjson= require "#{each.path}/package.json"  
       fullname=prjson.name
-
+      global.dependencies[basename each.path] = []
       global.projects[ fullname ] = {
         name: basename each.path
         fullname: fullname
@@ -109,26 +110,26 @@ task 'init-deps', '', (done)->
   return null
 
 updateVersions = () ->
-  again = false 
-  for p of global.projects 
-    echo "PROJECT : #{p}"
-    project = global.projects[p]
-    for dep of project.json.dependencies
-      if global.projects[dep]
-        echo " #{project.json.dependencies[dep]} != ^#{global.projects[dep].version}"
-        if not (project.json.dependencies[dep] == "^#{global.projects[dep].version}") 
-          echo "replacing"
-          project.json.dependencies[dep] = "^#{global.projects[dep].version}"
-          project.json.version = project.json.version.replace(/(.*)\.(.*)/, (a,b,c) -> "#{b}.#{ 1+Number(c) }" )
-          text = JSON.stringify( project.json , null, 2)
-          text.to("#{project.folder}/package.json" )  
-          echo "writing: #{project.folder}/package.json"
-          # text = JSON.stringify(global.projects[dep].json,null,2)
-          # text.to("#{global.projects[dep].folder}/package.json" )  
-          # echo "writing: #{global.projects[dep].folder}/package.json"
-          again = true
-  echo "AGAIN : #{again}"
-  return updateVersions() if again
+  again = true
+  
+  while( again ) 
+    again = false 
+    for p of global.projects 
+      project = global.projects[p]
+      for dep of project.json.dependencies
+        if global.projects[dep]
+          if not (project.json.dependencies[dep] == "^#{global.projects[dep].version}") 
+            again = true
+            # if this file has been hit, don't rev the version again.
+            if (!project.hit ) 
+              project.json.version = project.json.version.replace(/(.*)\.(.*)/, (a,b,c) -> "#{b}.#{ 1+Number(c) }" )
+              project.version = project.json.version
+              project.hit = true
+
+            project.json.dependencies[dep] = "^#{global.projects[dep].version}"
+            text = JSON.stringify( project.json , null, 2)
+            echo "Updating #{project.name} reference to  #{dep}"
+            text.to("#{project.folder}/package.json" )  
 
 task 'update-dependencies', 'Updates dependency information in package.json files.',['init-deps'], ()-> 
   # First, let's mark every project that 

@@ -13,13 +13,11 @@
     "declaration": true,
     "stripInternal": true,
     "noEmitHelpers": false,
-    "target": "es2016",
+    "target": "es2017",
     "types": [
       "node"
     ],
     "lib": [
-      "dom",
-      "es2016",
       "esnext"
     ],
     "experimentalDecorators": true,

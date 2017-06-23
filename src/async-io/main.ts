@@ -24,12 +24,25 @@ export class PathIsNotFileException extends Exception {
 
 export class PathIsNotDirectoryException extends Exception {
   constructor(path: string, public exitCode: number = 1) {
-    super(`File '${path}' is not a file.`, exitCode);
+    super(`File '${path}' is not a directory.`, exitCode);
     Object.setPrototypeOf(this, PathIsNotFileException.prototype);
   }
 }
 
 
+export class UnableToRemoveException extends Exception {
+  constructor(path: string, public exitCode: number = 1) {
+    super(`Unable to remove '${path}'.`, exitCode);
+    Object.setPrototypeOf(this, UnableToRemoveException.prototype);
+  }
+}
+
+export class UnableToMakeDirectoryException extends Exception {
+  constructor(path: string, public exitCode: number = 1) {
+    super(`Unable to create directory '${path}'.`, exitCode);
+    Object.setPrototypeOf(this, UnableToMakeDirectoryException.prototype);
+  }
+}
 export const exists: (path: string | Buffer) => Promise<boolean> = path => new Promise<boolean>((r, j) => fs.stat(path, (err: NodeJS.ErrnoException, stats: fs.Stats) => err ? r(false) : r(true)));
 export const readdir: (path: string | Buffer) => Promise<Array<string>> = promisify(fs.readdir);
 export const close: (fd: number) => Promise<void> = promisify(fs.close);
@@ -40,9 +53,23 @@ export const lstat: (path: string | Buffer) => Promise<fs.Stats> = promisify(fs.
 const fs_rmdir: (path: string | Buffer) => Promise<void> = promisify(fs.rmdir);
 const unlink: (path: string | Buffer) => Promise<void> = promisify(fs.unlink);
 const fs_mkdir: (path: string | Buffer) => Promise<void> = promisify(fs.mkdir);
-export async function mkdir(path: string) {
-  if (!await isDirectory(path)) {
-    fs_mkdir(path);
+
+export async function mkdir(dirPath: string) {
+  if (!await isDirectory(dirPath)) {
+    const p = path.normalize(dirPath + "/");
+    const parent = path.dirname(dirPath);
+    if (! await isDirectory(parent)) {
+      if (p != parent) {
+        await mkdir(parent);
+      }
+    }
+    try {
+      await fs_mkdir(p);
+    } catch (e) {
+      if (!await isDirectory(p)) {
+        throw new UnableToMakeDirectoryException(p);
+      }
+    }
   }
 }
 
@@ -53,52 +80,87 @@ export async function readFile(filename: string): Promise<string> {
 }
 
 export async function isDirectory(dirPath: string): Promise<boolean> {
-  if (await exists(dirPath)) {
-    return (await lstat(dirPath)).isDirectory();
+  try {
+    if (await exists(dirPath)) {
+      return (await lstat(dirPath)).isDirectory();
+    }
+  } catch (e) {
+    // don't throw!
   }
   return false;
 }
 
 export async function isFile(filePath: string): Promise<boolean> {
-  if (await exists(filePath)) {
-    return !(await lstat(filePath)).isDirectory();
+  try {
+    if (await exists(filePath)) {
+      return !(await lstat(filePath)).isDirectory();
+    }
+  } catch (e) {
+    // don't throw!
   }
+
   return false;
 }
 
 export async function rmdir(dirPath: string) {
+  // if it's not there, do nothing.
+  if (!await exists(dirPath)) {
+    return;
+  }
 
+  //if it's not a directory, that's bad.
   if (!await isDirectory(dirPath)) {
     throw new PathIsNotDirectoryException(dirPath);
   }
 
+  // make sure the folder is empty first.
   const files = await readdir(dirPath);
   if (files.length) {
     const awaiter = new OutstandingTaskAwaiter();
-    for (const file of files) {
-      const p = path.join(dirPath, file);
+    try {
+      for (const file of files) {
+        try {
+          const p = path.join(dirPath, file);
 
-      if (await isDirectory(p)) {
-        // folders are recursively rmdir'd 
-        awaiter.Await(rmdir(p));
+          if (await isDirectory(p)) {
+            // folders are recursively rmdir'd 
+            awaiter.Await(rmdir(p));
+          }
+          else {
+            // files and symlinks are unlink'd 
+            awaiter.Await(unlink(p).catch(() => { }));
+          }
+        } catch (e) {
+          // uh... can't.. ok.
+          console.log(e);
+        }
+
       }
-      else {
-        // files and symlinks are unlink'd 
-        awaiter.Await(unlink(p).catch(() => { }));
-      }
+    } finally {
+      // after all the entries are done
+      await awaiter.Wait();
     }
-    // after all the entries are done
-    await awaiter.Wait();
   }
-  await fs_rmdir(dirPath);
+  try {
+    // if this fails for some reason, check if it's important.
+    await fs_rmdir(dirPath);
+  } catch (e) {
+    // is it gone? that's all we really care about.
+    if (await isDirectory(dirPath)) {
+      // directory did not delete
+      throw new UnableToRemoveException(dirPath);
+    }
+  }
 }
 
 export async function rmFile(filePath: string) {
-  if (await exists(filePath)) {
-    throw new PathNotFoundException(filePath);
+  // not there? no problem
+  if (!exists(filePath)) {
+    return;
   }
 
-  if ((await lstat(filePath)).isDirectory()) {
+  // not a file? that's not cool.
+  if (await isDirectory(filePath)) {
     throw new PathIsNotFileException(filePath);
   }
 
@@ -106,7 +168,10 @@ export async function rmFile(filePath: string) {
     // files and symlinks are unlink'd 
     await unlink(filePath);
   } catch (e) {
-
+    // is it gone? that's all we really care about.
+    if (await exists(filePath)) {
+      // directory did not delete
+      throw new UnableToRemoveException(filePath);
+    }
   }
-
 }

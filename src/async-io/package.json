@@ -1,12 +1,15 @@
 {
   "name": "@microsoft.azure/async-io",
-  "version": "1.0.3",
+  "version": "1.0.18",
   "description": "Promisify'd asnyc wrappers (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
   "scripts": {
     "test": "./node_modules/.bin/mocha dist/test",
     "postversion": "gulp update-dependencies"
+  },
+  "engines": {
+    "node": ">=7.10.0"
   },
   "repository": {
     "type": "git",
@@ -35,7 +38,7 @@
     "@types/pify": "0.0.28"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.3",
+    "@microsoft.azure/polyfill": "^1.0.16",
     "pify": "^2.3.0"
   }
 }

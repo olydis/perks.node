@@ -60,21 +60,70 @@ polyfill.polyfilled;
     assert.equal(threw, true, "Expected bad package id to throw InvalidPackageIdentityException");
   }
 
-  @test async "Install Extension"() {
-    const dni = await this.extensionManager.findPackage("echo-cli", "*");
-    const extension = await this.extensionManager.installPackage(dni);
-
-    for await (const each of this.extensionManager.getInstalledExtensions()) {
-      // make sure we have one extension installed and that it is echo-cli (for testing)
-      assert.equal(each.name, "echo-cli");
-    }
-  }
-
   @test async "View Versions"() {
     // gets a package
     const pkg = await this.extensionManager.findPackage("echo-cli");
     // finds out if there are more versions
     assert.equal((await pkg.allVersions).length > 5, true)
   }
+
+
+  @test async "Install Extension"() {
+    const dni = await this.extensionManager.findPackage("echo-cli", "1.0.8");
+    const installing = this.extensionManager.installPackage(dni);
+    installing.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) });
+    const extension = await installing;
+
+    assert.notEqual(await extension.configuration, "");
+
+    let done = false;
+
+    for (const each of await this.extensionManager.getInstalledExtensions()) {
+      done = true;
+      // make sure we have one extension installed and that it is echo-cli (for testing)
+      assert.equal(each.name, "echo-cli");
+    }
+
+    assert.equal(done, true, "Package is not installed");
+  }
+
+  @test async "Install Extension via star"() {
+    const dni = await this.extensionManager.findPackage("echo-cli", "*");
+    const installing = this.extensionManager.installPackage(dni);
+    installing.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) });
+    const extension = await installing;
+
+    assert.notEqual(await extension.configuration, "");
+
+    let done = false;
+
+    for (const each of await this.extensionManager.getInstalledExtensions()) {
+      done = true;
+      // make sure we have one extension installed and that it is echo-cli (for testing)
+      assert.equal(each.name, "echo-cli");
+    }
+
+    assert.equal(done, true, "Package is not installed");
+  }
+
+  @test async "Force install"() {
+    const dni = await this.extensionManager.findPackage("echo-cli", "*");
+    const installing = this.extensionManager.installPackage(dni);
+    installing.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) });
+    const extension = await installing;
+    assert.notEqual(await extension.configuration, "");
+
+    // erase the readme.md file in the installed folder (check if force works to reinstall)
+    await asyncio.rmFile(await extension.configurationPath);
+
+    // reinstall with force!
+    const installing2 = this.extensionManager.installPackage(dni, true);
+    installing.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) });
+    const extension2 = await installing2;
+
+    // is the file back?
+    assert.notEqual(await extension2.configuration, "");
+  }
+
 
 }
