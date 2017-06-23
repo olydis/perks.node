@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/console",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Common reusable libraries and tools that has been accumulating for Azure Open Source Projects",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
