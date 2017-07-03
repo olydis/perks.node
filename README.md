@@ -1,17 +1,13 @@
-# Azure/Perks
+# Project: @microsoft.azure/extension
 
-This repository contains common reusable libraries and tools that has been accumulating in some node.js open source projects.  
+This package contains common code for the developer tools for generating Azure SDKs.
 
-Instead of having one project publish things tangentially to it's core mission, we're migrating that code here.
+Including:
+- AutoRest
+- dotnet-install
 
-### Libraries 
-
-#### console
-Adds support to make consistent command line developer tools.
-- uses `yargs` for command line parsing
-- uses `markedTerminal` (and monkey-patches `console.*` functions to provide full console-rendered markdown support in tools)
-
-
+### Description
+ExtensionManager
 
 ----
 
