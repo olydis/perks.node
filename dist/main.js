@@ -413,10 +413,10 @@ class ExtensionManager {
         }
         if (command[0] == 'node') {
             // nodejs or electron. Use child_process.fork()
-            return childProcess.fork(command[1], command.slice(2), { env: env, silent: true });
+            return childProcess.fork(command[1], command.slice(2), { env: env, cwd: extension.modulePath, silent: true });
         }
         // spawn the command 
-        return childProcess.spawn(command[0], command.slice(1), { env: env });
+        return childProcess.spawn(command[0], command.slice(1), { env: env, cwd: extension.modulePath });
     }
 }
 exports.ExtensionManager = ExtensionManager;
