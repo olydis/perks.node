@@ -324,6 +324,7 @@ class ExtensionManager {
         const extension = new Extension(pkg, this.installationPath);
         // change directory
         const cwd = process.cwd();
+        try { await asyncIO.mkdir(this.installationPath); } catch (e) { }
         process.chdir(this.installationPath);
         progress.Start.Dispatch(null);
         const engineCount = extension.engines ? Object.getOwnPropertyNames(extension.engines).length : 0;
