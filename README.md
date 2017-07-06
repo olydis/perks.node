@@ -1,15 +1,37 @@
-# Azure/Perks
+# Project: dotnet-install
 
-This repository contains common reusable libraries and tools that has been accumulating in some node.js open source projects.  
+This package provides a script for reliably installing the dotnet framework cross-platform.
 
-Instead of having one project publish things tangentially to it's core mission, we're migrating that code here.
+### Examples
 
-### Libraries 
+#### Show Help
+```
+> dotnet-install --help 
 
-#### console
-Adds support to make consistent command line developer tools.
-- uses `yargs` for command line parsing
-- uses `markedTerminal` (and monkey-patches `console.*` functions to provide full console-rendered markdown support in tools)
+DotNet Framework Installation Utility
+(C) 2017 Microsoft Corporation.
+
+Usage: dotnet-install <command> [options]
+
+Commands:
+  info     Show installed information
+  list     Show available dotnet framework versions
+  install  Install dotnet framework version
+  remove   Remove installed dotnet framework version
+
+Options:
+  --help  Show help  [boolean]
+```
+
+#### Install
+```
+> dotnet-install install --version 1.0
+Installing framework
+  Selected Framework: windows-1.0-x64
+  Installation folder: C:\Users\garrett\.dotnet
+
+  Downloading/Unpacking [-----] Done.
+```
 
 
 

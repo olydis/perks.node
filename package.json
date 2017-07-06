@@ -1,10 +1,18 @@
 {
-  "name": "perks-build",
-  "version": "1.0.0",
-  "description": "Tools for AutoRest build processes",
+  "name": "dotnet-install",
+  "version": "1.0.50",
+  "description": "Platform Agnostic utility/library to install dotnet frameworks into a folder",
+  "engines": {
+    "node": ">=7.10.0"
+  },
+  "main": "./dist/main.js",
+  "typings": "./dist/main.d.ts",
+  "bin": {
+    "dotnet-install": "./dist/app.js"
+  },
   "scripts": {
-    "test": "gulp test",
-    "install": "gulp npm-install --verbose --threshold=1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postversion": "gulp update-dependencies"
   },
   "repository": {
     "type": "git",
@@ -13,48 +21,38 @@
   "keywords": [
     "perks",
     "autorest",
+    "dotnet",
+    "dotnet-install",
     "azure",
-    "node",
     "javascript",
     "typescript"
   ],
-  "author": "Microsoft Corporation",
+  "author": "Microsoft",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Azure/perks.node/issues"
   },
-  "homepage": "https://github.com/Azure/perks.node/readme.md",
-  "engines": {
-    "node": ">=6.9.5"
-  },
+  "homepage": "https://github.com/Azure/perks.node#readme",
   "devDependencies": {
     "@types/node": "^7.0.5",
-    "@types/semver": "^5.3.30",
-    "@types/tmp": "0.0.32",
+    "@types/request": "^0.0.45",
+    "@types/yargs": "^6.6.0",
+    "buffer-peek-stream": "^1.0.1",
     "chalk": "^1.1.2",
-    "coffee-script": "^1.11.1",
-    "del": "^2.2.2",
-    "gulp": "^3.9.1",
-    "gulp-dependencies-changed": "^1.0.2",
-    "gulp-eol": "^0.1.2",
-    "gulp-filter": "^5.0.0",
-    "gulp-github-release": "^1.2.1",
-    "gulp-line-ending-corrector": "^1.0.1",
-    "gulp-rename": "^1.2.2",
-    "gulp-unzip": "^0.2.0",
-    "gulp-zip": "^4.0.0",
-    "iced-coffee-script": "*",
     "marked": "^0.3.6",
     "marked-terminal": "^2.0.0",
-    "moment": "^2.17.1",
-    "npm": "^4.6.1",
-    "run-sequence": "*",
-    "shelljs": "^0.7.6",
-    "through2-parallel": "^0.1.3",
-    "typescript": "2.3.3",
-    "vinyl-fs": "^2.4.4",
-    "vinyl-paths": "^2.1.0",
-    "yargs": "^6.6.0"
+    "moment": "^2.18.1",
+    "source-map-support": "^0.4.15",
+    "tar.gz2": "^1.0.0",
+    "unzipper": "^0.8.4",
+    "yargs": "^8.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@microsoft.azure/console": "^1.0.25",
+    "@microsoft.azure/eventing": "^1.0.15",
+    "@microsoft.azure/async-io": "^1.0.18",
+    "@microsoft.azure/unpack": "^1.0.15",
+    "request": "^2.81.0",
+    "request-progress": "^3.0.0"
+  }
 }

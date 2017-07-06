@@ -210,7 +210,7 @@ function detectOperatingSystem10(): string {
       const text = fs.readFileSync(`/etc/os-release`, { encoding: `utf8` }).replace(`"`, ``);
       const osrelease = {
         id: (/ID=(.*)/.exec(text) || [null, null])[1],
-        version: (/ID_VERSION=(.*)/.exec(text) || [null, null])[1]
+        version: (/ID_VERSION=(.*)/.exec(text) || /VERSION_ID="*([^"]*)"*/.exec(text) || [null, null])[1]
       }
 
       switch (osrelease.id) {
