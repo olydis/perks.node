@@ -161,7 +161,7 @@ export class Extension extends Package {
    * The installed location the package. 
    */
   public get location(): string {
-    return path.normalize(`${this.installationPath}/${this.id.replace('/', '#')}`);
+    return path.normalize(`${this.installationPath}/${this.id.replace('/', '_')}`);
   }
   /**
    * The path to the installed npm package (internal to 'location')
@@ -395,13 +395,17 @@ export class ExtensionManager {
       cc.prefix = extension.location;
       cc.force = force;
 
+      if (await asyncIO.isDirectory(extension.location)) {
       if (force) {
         try {
-          if (await asyncIO.isDirectory(extension.location)) {
             await asyncIO.rmdir(extension.location);
           }
-        } catch (e) {
+          catch (e) {
           // no worries.
+        }
+        } else {
+          // already installed
+          return extension;
         }
       }
 
@@ -466,9 +470,9 @@ export class ExtensionManager {
 
     if (command[0] == 'node') {
       // nodejs or electron. Use child_process.fork()
-      return childProcess.fork(command[1], command.slice(2), { env: env, silent: true })
+      return childProcess.fork(command[1], command.slice(2), { env: env, cwd: extension.modulePath, silent: true })
     }
     // spawn the command 
-    return childProcess.spawn(command[0], command.slice(1), { env: env });
+    return childProcess.spawn(command[0], command.slice(1), { env: env, cwd: extension.modulePath });
   }
 }
