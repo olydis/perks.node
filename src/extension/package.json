@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/extension",
-  "version": "1.0.56",
+  "version": "1.0.60",
   "description": "NPM-Based extension aquisition (for Azure Open Source Projects)",
   "engines": {
     "node": ">=7.10.0"
@@ -38,10 +38,10 @@
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
-    "@microsoft.azure/async-io": "^1.0.18",
+    "@microsoft.azure/async-io": "^1.0.19",
     "@microsoft.azure/eventing": "^1.0.15",
     "@microsoft.azure/polyfill": "^1.0.16",
-    "dotnet-install": "^1.0.50",
+    "dotnet-install": "^1.0.53",
     "hosted-git-info": "^2.4.2",
     "npm": "^5.0.3",
     "memorystream": "~0.3.1",

@@ -396,13 +396,13 @@ export class ExtensionManager {
       cc.force = force;
 
       if (await asyncIO.isDirectory(extension.location)) {
-      if (force) {
-        try {
+        if (force) {
+          try {
             await asyncIO.rmdir(extension.location);
           }
           catch (e) {
-          // no worries.
-        }
+            // no worries.
+          }
         } else {
           // already installed
           return extension;

@@ -6,7 +6,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as promisify from "pify";
-import { OutstandingTaskAwaiter, Exception } from '@microsoft.azure/polyfill'
+import { OutstandingTaskAwaiter, Exception, Delay } from '@microsoft.azure/polyfill'
+import * as lockfile from "proper-lockfile"
+
 
 export class PathNotFoundException extends Exception {
   constructor(path: string, public exitCode: number = 1) {
@@ -43,6 +45,15 @@ export class UnableToMakeDirectoryException extends Exception {
     Object.setPrototypeOf(this, UnableToMakeDirectoryException.prototype);
   }
 }
+
+export class UnableToReadLockException extends Exception {
+  constructor(path: string, public exitCode: number = 1) {
+    super(`Unable to create read lock on '${path}'.`, exitCode);
+    Object.setPrototypeOf(this, UnableToReadLockException.prototype);
+  }
+}
+
+
 export const exists: (path: string | Buffer) => Promise<boolean> = path => new Promise<boolean>((r, j) => fs.stat(path, (err: NodeJS.ErrnoException, stats: fs.Stats) => err ? r(false) : r(true)));
 export const readdir: (path: string | Buffer) => Promise<Array<string>> = promisify(fs.readdir);
 export const close: (fd: number) => Promise<void> = promisify(fs.close);
@@ -53,6 +64,8 @@ export const lstat: (path: string | Buffer) => Promise<fs.Stats> = promisify(fs.
 const fs_rmdir: (path: string | Buffer) => Promise<void> = promisify(fs.rmdir);
 const unlink: (path: string | Buffer) => Promise<void> = promisify(fs.unlink);
 const fs_mkdir: (path: string | Buffer) => Promise<void> = promisify(fs.mkdir);
+const fs_open: (path: string | Buffer, flags: string | number) => Promise<number> = promisify(fs.open);
+const fs_close: (fs: number) => Promise<void> = promisify(fs.close);
 
 export async function mkdir(dirPath: string) {
   if (!await isDirectory(dirPath)) {
@@ -173,5 +186,60 @@ export async function rmFile(filePath: string) {
       // directory did not delete
       throw new UnableToRemoveException(filePath);
     }
+  }
+}
+
+export interface UnlockOptions {
+  realpath?: boolean;
+}
+
+export interface CheckOptions extends UnlockOptions {
+  stale?: number;
+}
+
+export interface LockOptions extends CheckOptions {
+  update?: number;
+  retries?: number;
+}
+
+export type release = () => void;
+
+export class Lock {
+  public static exclusive: (path: string, options?: LockOptions) => Promise<release> = promisify(lockfile.lock);
+  public static check: (path: string, options?: CheckOptions) => Promise<boolean> = promisify(lockfile.check);
+  public static async read(path: string, options?: LockOptions): Promise<release> {
+    // first try to create the file
+    // it's ok if it fails
+    options = options || {};
+
+    const p = `${path}.lock`;
+
+    try {
+      fs.writeFileSync(p, 'lockfile');
+    } catch (e) {
+      // no worries.
+    }
+
+    // try to open the file for read 
+    try {
+      if (await isFile(p)) {
+        const fd = await fs_open(p, 'r');
+        return async () => {
+          fs_close(fd)
+          try {
+            await rmFile(p);
+          } catch (e) {
+            // who cares.
+          }
+        };
+      }
+    } catch (e) {
+
+    }
+    if (options.retries) {
+      await Delay(1000);
+      return await this.read(p, options.retries - 1);
+    }
+    throw new UnableToReadLockException(path);
   }
 }

@@ -41,6 +41,16 @@ function rtrim(str: string, trimRegEx?: string | undefined): string {
   return trimRegEx ? str.replace(new RegExp(trimRegEx + "*$"), '') : str.replace(/\s*$/, '');
 }
 
+let pad2 = (n: number) => n <= 99 ? ("0" + n).slice(-2) : n;
+
+const _quiet = yargs.argv.quiet;
+const _verbose = yargs.argv.verbose;
+const _debug = yargs.argv.debug;
+
+// reset so we can start fresh...
+yargs.reset();
+
+
 /**
  * Enables Perks console enhancements
  * - monkeypatches node's console 
@@ -61,9 +71,6 @@ export function enhanceConsole(): boolean {
     const stdout = process.stdout;
     const stderr = process.stderr;
 
-    const _quiet = yargs.argv.quiet;
-    const _verbose = yargs.argv.verbose;
-    const _debug = yargs.argv.debug;
 
     console.log = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
@@ -130,18 +137,18 @@ export function enhanceConsole(): boolean {
 
 export function Timestamp(): string {
   const m = new Date();
-  const hh = `${m.getHours()}`;
-  const mm = `${m.getMinutes()}`;
-  const ss = `${m.getSeconds()}`;
+  const hh = `${pad2(m.getHours())}`;
+  const mm = `${pad2(m.getMinutes())}`;
+  const ss = `${pad2(m.getSeconds())}`;
 
   return chalk.red(`${chalk.gray(hh)}:${chalk.gray(mm)}:${chalk.gray(ss)}`);
 }
 
 export function NoColorTimestamp(): string {
   const m = new Date();
-  const hh = `${m.getHours()}`;
-  const mm = `${m.getMinutes()}`;
-  const ss = `${m.getSeconds()}`;
+  const hh = `${pad2(m.getHours())}`;
+  const mm = `${pad2(m.getMinutes())}`;
+  const ss = `${pad2(m.getSeconds())}`;
 
   return `${hh}:${mm}:${ss}`;
 }
@@ -178,7 +185,19 @@ cli.title = (text: string) => {
   return cli;
 };
 
+
 cli
   .wrap(0)
-  .help('help', "Show help")
+  .help('help', "`Show help`")
+  .option("quiet", {
+    describe: "`suppress most output information`",
+    type: "boolean",
+  }).option("verbose", {
+    describe: "`display verbose logging information`",
+    type: "boolean",
+  })
+  .option("debug", {
+    describe: "`display debug logging information`",
+    type: "boolean",
+  })
   .usage(`# ${_title}\n${_copyright}\n## Usage: ${_name} <command> [options]`);

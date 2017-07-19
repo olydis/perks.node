@@ -33,3 +33,7 @@ export function shallowCopy(input: any, ...filter: Array<string>): any {
   }
   return result;
 }
+
+export function Delay(delayMS: number): Promise<void> {
+  return new Promise<void>(res => setTimeout(res, delayMS));
+}
