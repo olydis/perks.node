@@ -3,7 +3,7 @@
 require('source-map-support').install({ hookRequire: true });
 require("../bluebird-stacktraces")
 
-export const polyfilled = true
+
 export * from './lib/exception'
 export * from './lib/outstanding-task-awaiter'
 export * from "./lib/lazy-promise"

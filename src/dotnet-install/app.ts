@@ -144,17 +144,17 @@ async function install(args: any): Promise<number> {
   console.log(`# Installing framework`);
   console.log(`> Selected Framework: ${args.os}-${args.version}-${args.arch}`);
   console.log(`> Installation folder: ${printablePath(args.path)} `);
-  const progress = dotnet.installFramework(args.version, args.os, args.arch, args.path);
-  progress.Start.Subscribe((p, done) => {
-    process.stdout.write(`\n  Downloading/Unpacking [-`);
-  });
-  progress.Progress.Subscribe((p, percent) => {
-    process.stdout.write(`-`);
-  });
-  progress.End.Subscribe((p, done) => {
-    process.stdout.write(`-] Done. \n`);
-  });
-  return await progress ? 0 : 1;
+  return await dotnet.installFramework(args.version, args.os, args.arch, args.path, false, (progress) => {
+    progress.Start.Subscribe((p, done) => {
+      process.stdout.write(`\n  Downloading/Unpacking [-`);
+    });
+    progress.Progress.Subscribe((p, percent) => {
+      process.stdout.write(`-`);
+    });
+    progress.End.Subscribe((p, done) => {
+      process.stdout.write(`-] Done. \n`);
+    });
+  }) ? 0 : 1;
 }
 
 async function remove(args: any): Promise<number> {

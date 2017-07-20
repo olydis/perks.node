@@ -6,8 +6,6 @@ import * as up from '../main'
 import * as os from 'os'
 import * as path from 'path'
 
-// ensure
-polyfill.polyfilled;
 
 @suite class unpack {
   @test async "tgz"() {

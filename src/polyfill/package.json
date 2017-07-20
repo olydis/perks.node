@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/polyfill",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Polyfill functions for Azure Open Source Projects",
   "engines": {
     "node": ">=7.10.0"

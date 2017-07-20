@@ -83,13 +83,8 @@ export function enhanceConsole(): boolean {
     };
 
     console.info = (message?: any, ...optionalParams: any[]) => {
-      if (_verbose) {
-        if (stdout.isTTY) {
-          stdout.write(chalk.bold.magenta(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
-        } else {
-          stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
-        }
-      }
+      // spit this out regardless to console.log directly. Not Processed.
+      log(message, ...optionalParams)
     };
 
     /*

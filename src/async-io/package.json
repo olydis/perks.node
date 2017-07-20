@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/async-io",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Promisify'd asnyc wrappers (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -38,7 +38,7 @@
     "@types/pify": "0.0.28"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.16",
+    "@microsoft.azure/polyfill": "^1.0.17",
     "proper-lockfile": "^2.0.1",
     "pify": "^2.3.0"
   }

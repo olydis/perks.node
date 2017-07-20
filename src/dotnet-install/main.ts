@@ -10,15 +10,13 @@ import * as fs from 'fs';
 import { FrameworkNotInstalledException, UnsupportedPlatformException, UnknownFramework } from "./exception"
 import * as req from 'request';
 import { unpack } from '@microsoft.azure/unpack'
-import { IEvent, EventEmitter, EventEmitterPromise, ProgressPromise } from '@microsoft.azure/eventing'
+import { Lock } from '@microsoft.azure/async-io'
+import { IEvent, EventEmitter, EventEmitterPromise, Subscribe, Progress } from '@microsoft.azure/eventing'
 import { exists, readdir, rmdir } from '@microsoft.azure/async-io'
 import * as path from 'path'
-export { ProgressPromise } from '@microsoft.azure/eventing';
+export { Progress } from '@microsoft.azure/eventing';
 
 var progress = require('request-progress');
-
-// ensure that we're polyfilled.
-polyfill.polyfilled;
 
 // load framework definitions
 const frameworks = require("../frameworks.json");
@@ -136,26 +134,25 @@ export async function isInstalled(version: string, folder: string = path.normali
   return (await listInstalledFrameworkRevisions(folder)).indexOf(version) > -1;
 }
 
-export function installFramework(version: string, operatingSystem: string, architecture: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`), force: boolean = false): ProgressPromise<void> {
+export async function installFramework(version: string, operatingSystem: string, architecture: string, folder: string = path.normalize(`${os.homedir()}/.dotnet`), force: boolean = false, progressInit: Subscribe = () => { }): Promise<void> {
+  const ppp = new Progress(progressInit);
+
   version = getReleaseFromVersion(version);
   const URL = getDownloadUrl(version, operatingSystem, architecture);
-  let rq = progress(req(URL), { delay: 500, throttle: 500 });
+  const rq = progress(req(URL), { delay: 500, throttle: 500 });
 
-  const result = new ProgressPromise(isInstalled(version, folder).then(async (i) => {
-    if (force || !i) {
+  rq.on("progress", (state: any) => ppp.NotifyProgress(Math.round(state.percent * 100)));
+  rq.on('end', () => ppp.NotifyEnd());
+
+  if (force || !await isInstalled(version, folder)) {
+    const release = await Lock.waitForExclusive(folder);
+    if (release) {
       await unpack(rq, folder)
+      await release();
     }
-  }));
+    throw new FrameworkNotInstalledException(folder, version);
+  }
 
-  rq.on("progress", (state: any) => {
-    result.SetProgress(Math.round(state.percent * 100));
-  });
-
-  rq.on('end', function () {
-    result.SetEnd();
-  });
-
-  return result;
 }
 
 export function getAllReleasesAndVersions(): Array<string> {

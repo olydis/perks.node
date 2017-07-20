@@ -6,13 +6,13 @@
     "configurations": [
         {
             "type": "node",
-            "protocol": "legacy",
+            "protocol": "inspector",
             "request": "launch",
             "name": "test - extension installer",
             "program": "${workspaceRoot}/src/extension/node_modules/mocha/bin/_mocha",
             "cwd": "${workspaceRoot}/src/extension",
             "args": [
-                "dist/test"
+                "dist/test",
                 "--timeout=1200000"
             ],
             "outFiles": [

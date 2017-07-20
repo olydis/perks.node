@@ -118,27 +118,24 @@ export class EventEmitterPromise<T> extends EventEmitter implements Promise<T> {
     return this.promise.catch(onrejected);
   }
 }
+export type Subscribe = (instance: Progress) => void;
 
-export interface IProgress<T> {
-  Progress: IEvent<ProgressPromise<T>, number>;
-  End: IEvent<ProgressPromise<T>, null>;
-  Start: IEvent<ProgressPromise<T>, null>;
-  Message: IEvent<ProgressPromise<T>, string>;
-}
-
-export class ProgressPromise<T> extends EventEmitterPromise<T> implements IProgress<T> {
-
-  @EventEmitter.Event public Progress: IEvent<ProgressPromise<T>, number>;
-  @EventEmitter.Event public End: IEvent<ProgressPromise<T>, null>;
-  @EventEmitter.Event public Start: IEvent<ProgressPromise<T>, null>;
-  @EventEmitter.Event public Message: IEvent<ProgressPromise<T>, string>;
+export class Progress extends EventEmitter {
+  @EventEmitter.Event public Progress: IEvent<Progress, number>;
+  @EventEmitter.Event public End: IEvent<Progress, null>;
+  @EventEmitter.Event public Start: IEvent<Progress, null>;
+  @EventEmitter.Event public Message: IEvent<Progress, string>;
 
   private started: boolean = false;
-  public constructor(promise: Promise<T> | undefined = undefined) {
-    super(promise);
+
+  public constructor(initialize: Subscribe) {
+    super();
+    if (initialize) {
+      initialize(this);
+    }
   }
 
-  public SetProgress(percent: number) {
+  public NotifyProgress(percent: number) {
     if (!this.started) {
       this.started = true;
       this.Start.Dispatch(null);
@@ -146,11 +143,11 @@ export class ProgressPromise<T> extends EventEmitterPromise<T> implements IProgr
     this.Progress.Dispatch(percent);
   }
 
-  public SetEnd() {
+  public NotifyEnd() {
     this.End.Dispatch(null);
   }
 
-  public SendMessage(text: string) {
+  public NotifyMessage(text: string) {
     this.Message.Dispatch(text);
   }
 }

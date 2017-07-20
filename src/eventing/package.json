@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/eventing",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Typescript-based eventing framekwor (for Azure Open Source Projects)",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -36,6 +36,6 @@
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
-    "@microsoft.azure/polyfill": "^1.0.16"
+    "@microsoft.azure/polyfill": "^1.0.17"
   }
 }
