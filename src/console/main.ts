@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-import * as marked from "marked";
+import * as _marked from "marked";
 import * as chalk from "chalk";
 import * as moment from "moment";
 import * as yargs from 'yargs';
@@ -13,7 +13,7 @@ import * as util from 'util'
 const MemoryStream = require("memorystream");
 const markedTerminal = require("marked-terminal");
 
-marked.setOptions({
+_marked.setOptions({
   renderer: new markedTerminal({
     heading: chalk.green.bold,
     firstHeading: chalk.green.bold.underline,
@@ -35,6 +35,7 @@ marked.setOptions({
   })
 });
 
+
 (<any>global).console_monkeypatched = false;
 
 function rtrim(str: string, trimRegEx?: string | undefined): string {
@@ -50,6 +51,12 @@ const _debug = yargs.argv.debug;
 // reset so we can start fresh...
 yargs.reset();
 
+
+function marked(s: string): string {
+  if (s) {
+    return _marked(s.replace(/\\\./g, `\\\\.`));
+  } return s;
+}
 
 /**
  * Enables Perks console enhancements
@@ -71,7 +78,6 @@ export function enhanceConsole(): boolean {
     const stdout = process.stdout;
     const stderr = process.stderr;
 
-
     console.log = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (stdout.isTTY) {
@@ -84,7 +90,7 @@ export function enhanceConsole(): boolean {
 
     console.info = (message?: any, ...optionalParams: any[]) => {
       // spit this out regardless to console.log directly. Not Processed.
-      log(message, ...optionalParams)
+      log(message, ...optionalParams);
     };
 
     /*
@@ -119,7 +125,7 @@ export function enhanceConsole(): boolean {
     console.warn = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (stdout.isTTY) {
-          stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
+          stdout.write((chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n'));
         } else {
           stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }
