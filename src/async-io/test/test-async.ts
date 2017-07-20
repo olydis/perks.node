@@ -3,8 +3,6 @@ import * as polyfill from '@microsoft.azure/polyfill'
 import * as assert from "assert";
 import * as asyncio from '../main'
 import * as os from 'os'
-// ensure
-polyfill.polyfilled;
 
 @suite class AsyncIO {
 

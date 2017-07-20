@@ -17,7 +17,7 @@ import * as u from 'util';
 import * as os from 'os';
 import * as dotnet from "dotnet-install"
 import * as semver from 'semver';
-import { ProgressPromise, IProgress } from '@microsoft.azure/eventing'
+import { Progress, Subscribe } from '@microsoft.azure/eventing'
 
 import * as path from 'path';
 import * as fetch from "npm/lib/fetch-package-metadata";
@@ -87,6 +87,15 @@ export class MissingStartCommandException extends Exception {
     Object.setPrototypeOf(this, MissingStartCommandException.prototype);
   }
 }
+
+export class ExtensionFolderLocked extends Exception {
+  constructor(path: string) {
+    super(`Extension Folder '${path}' is locked by another process.`, 1);
+    Object.setPrototypeOf(this, ExtensionFolderLocked.prototype);
+  }
+}
+
+
 function cmdlineToArray(text: string, result: Array<string> = [], matcher = /[^\s']+|'([^']*)'/gi, count = 0): Array<string> {
   const match = matcher.exec(text);
   return match ? cmdlineToArray(text, result, matcher, result.push(match[1] ? match[1] : match[0])) : result;
@@ -161,7 +170,7 @@ export class Extension extends Package {
    * The installed location the package. 
    */
   public get location(): string {
-    return path.normalize(`${this.installationPath}/${this.id.replace('/', '#')}`);
+    return path.normalize(`${this.installationPath}/${this.id.replace('/', '_')}`);
   }
   /**
    * The path to the installed npm package (internal to 'location')
@@ -261,7 +270,10 @@ function resolveName(name: string, version: string) {
   }
 }
 
+
 export class ExtensionManager {
+  private static instances: Array<ExtensionManager> = [];
+
   public dotnetPath = path.normalize(`${os.homedir()}/.dotnet`);
 
   public static async Create(installationPath: string): Promise<ExtensionManager> {
@@ -271,15 +283,58 @@ export class ExtensionManager {
     if (!asyncIO.isDirectory(installationPath)) {
       throw new Exception(`Extension folder '${installationPath}' is not a valid directory`);
     }
-    return new ExtensionManager(installationPath);
+
+    return new ExtensionManager(installationPath, await asyncIO.Lock.read(installationPath));
+  }
+  /*@internal*/ public static async disposeAll() {
+    for (const each of this.instances) {
+      each.dispose();
+    }
   }
 
-  private constructor(private installationPath: string) {
+  public async dispose() {
+    const r = this.readLockRelease;
+    this.readLockRelease = async () => { };
+    await r();
+  }
+
+  public async reset() {
+    // release the read lock on the folder
+    await this.readLockRelease();
+
+    // check if we can even get a lock
+    if (await asyncIO.Lock.check(this.installationPath)) {
+      // it's locked. can't reset.
+      throw new ExtensionFolderLocked(this.installationPath);
+    }
+
+    try {
+      // get the exclusive lock
+      const release = await asyncIO.Lock.exclusive(this.installationPath);
+
+      // nuke the folder 
+      await asyncIO.rmdir(this.installationPath);
+
+      // recreate the folder
+      await asyncIO.mkdir(this.installationPath);
+
+      // drop the lock
+      release();
+    } catch (e) {
+      throw (e);
+    } finally {
+      // add a read lock
+      this.readLockRelease = await asyncIO.Lock.read(this.installationPath)
+    }
+
+  }
+
+  private constructor(private installationPath: string, private readLockRelease: () => void) {
 
   }
 
   // public async installEngine(name: string, version: string, onStart: () => void = () => { }, onEnd: () => void = () => { }, onProgress: (n:number) => void = (n) => { }, onMessage: (t:string) => void = (t) => { } ): Promise<any> {
-  public installEngine(name: string, version: string, force: boolean = false): ProgressPromise<void> {
+  public async installEngine(name: string, version: string, force: boolean = false, progressInit: Subscribe = () => { }): Promise<void> {
     switch (name) {
       case "dotnet":
 
@@ -292,14 +347,14 @@ export class ExtensionManager {
           throw new UnsatisfiedEngineException(name, version, ` -- unsupported operating system.`);
         }
         if (!force && dotnet.isInstalled(selectedVersion, this.dotnetPath)) {
-          return new ProgressPromise(Promise.resolve());
+          return;
         }
 
-        return dotnet.installFramework(selectedVersion, operatingSystem, os.arch(), this.dotnetPath);
+        return dotnet.installFramework(selectedVersion, operatingSystem, os.arch(), this.dotnetPath, false, progressInit);
       case "node":
       case "npm":
         // no worries with these for now
-        return new ProgressPromise(Promise.resolve());
+        return;
 
       default:
         throw new UnsatisfiedEngineException(name, version);
@@ -354,12 +409,9 @@ export class ExtensionManager {
     return results;
   }
 
-  public installPackage(pkg: Package, force?: boolean): ProgressPromise<Extension> {
-    const p = new ProgressPromise<Extension>();
-    return p.initialize(this._installPackage(pkg, force || false, p));
-  }
+  public async installPackage(pkg: Package, force?: boolean, maxWait: number = 5 * 60 * 1000, progressInit: Subscribe = () => { }): Promise<Extension> {
+    const progress = new Progress(progressInit);
 
-  private async _installPackage(pkg: Package, force: boolean, progress: IProgress<Extension>): Promise<Extension> {
     const cc = <any>await npm_config;
     const extension = new Extension(pkg, this.installationPath);
 
@@ -375,13 +427,12 @@ export class ExtensionManager {
       for (const engine in extension.engines) {
         progress.Message.Dispatch(`Installing ${engine}, ${extension.engines[engine]}`);
 
-        const installing = this.installEngine(engine, extension.engines[engine], force);
+        await this.installEngine(engine, extension.engines[engine], force, installing => {
+          // all engines are 1/4 of the install. 
+          // each engine is 1/count of the progress; 
+          installing.Progress.Subscribe((src, percent) => progress.Progress.Dispatch((percent / engineCount) / 4));
+        });
 
-        // all engines are 1/4 of the install. 
-        // each engine is 1/count of the progress; 
-        installing.Progress.Subscribe((src, percent) => progress.Progress.Dispatch((percent / engineCount) / 4));
-
-        await installing;
       }
     }
 
@@ -395,23 +446,38 @@ export class ExtensionManager {
       cc.prefix = extension.location;
       cc.force = force;
 
-      if (force) {
-        try {
-          if (await asyncIO.isDirectory(extension.location)) {
+      if (await asyncIO.isDirectory(extension.location)) {
+        const release = await asyncIO.Lock.waitForExclusive(extension.location);
+        if (force) {
+          try {
             await asyncIO.rmdir(extension.location);
           }
-        } catch (e) {
-          // no worries.
+          catch (e) {
+            // no worries.
+          }
+        } else {
+          // already installed
+          return extension;
+        }
+        if (release) {
+          await release();
         }
       }
 
       await asyncIO.mkdir(extension.location);
+      const release = await asyncIO.Lock.waitForExclusive(extension.location);
+      if (release) {
+        // run NPM INSTALL for the package.
+        progress.NotifyMessage(`Running  npm install for ${pkg.name}, ${pkg.version}`);
 
-      // run NPM INSTALL for the package.
-      progress.Message.Dispatch(`Running  npm install for ${pkg.name}, ${pkg.version}`);
+        const results = await npmInstall(pkg.name, pkg.version, extension.source, force || false);
+        progress.NotifyMessage(`npm install completed ${pkg.name}, ${pkg.version}`);
 
-      const results = await npmInstall(pkg.name, pkg.version, extension.source, force);
-      progress.Message.Dispatch(`npm install completed ${pkg.name}, ${pkg.version}`);
+
+        await release();
+      } else {
+        throw new Exception("NO LOCK.")
+      }
       return extension;
     } catch (e) {
       // clean up the attempted install directory
@@ -437,7 +503,14 @@ export class ExtensionManager {
 
   public async removeExtension(extension: Extension): Promise<void> {
     if (await asyncIO.isDirectory(extension.location)) {
-      await asyncIO.rmdir(extension.location);
+      const release = await asyncIO.Lock.waitForExclusive(extension.location);
+      if (release) {
+        await asyncIO.rmdir(extension.location);
+        await release();
+      } else {
+        throw new Exception("I has a sad.");
+      }
+
     }
   }
 
@@ -466,9 +539,15 @@ export class ExtensionManager {
 
     if (command[0] == 'node') {
       // nodejs or electron. Use child_process.fork()
-      return childProcess.fork(command[1], command.slice(2), { env: env, silent: true })
+      return childProcess.fork(command[1], command.slice(2), { env: env, cwd: extension.modulePath, silent: true })
     }
     // spawn the command 
-    return childProcess.spawn(command[0], command.slice(1), { env: env });
+    return childProcess.spawn(command[0], command.slice(1), { env: env, cwd: extension.modulePath });
   }
 }
+
+// Try to ensure that everything is cleaned up at the end of this process.
+process
+  .once('SIGINT', () => process.exit(1))
+  .once('SIGTERM', () => process.exit(1))
+  .once('exit', ExtensionManager.disposeAll);

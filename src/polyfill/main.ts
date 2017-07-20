@@ -3,7 +3,7 @@
 require('source-map-support').install({ hookRequire: true });
 require("../bluebird-stacktraces")
 
-export const polyfilled = true
+
 export * from './lib/exception'
 export * from './lib/outstanding-task-awaiter'
 export * from "./lib/lazy-promise"
@@ -32,4 +32,8 @@ export function shallowCopy(input: any, ...filter: Array<string>): any {
     }
   }
   return result;
+}
+
+export function Delay(delayMS: number): Promise<void> {
+  return new Promise<void>(res => setTimeout(res, delayMS));
 }

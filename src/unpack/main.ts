@@ -34,7 +34,7 @@ export function unpack(stream: Stream, targetFolder: string): Promise<boolean> {
       u.on('error', (err) => j(new Error(`${err} error during unpacking.`)));
 
       // give it a moment after closing the stream. 
-      u.on('finish', () => setTimeout(() => r(true), 200));
+      u.on('finish', () => setTimeout(() => r(true), 500));
     });
   });
 }

@@ -2,8 +2,6 @@ import { suite, test, slow, timeout, skip, only } from "mocha-typescript";
 import * as polyfill from '@microsoft.azure/polyfill'
 import * as assert from "assert";
 
-// ensure
-polyfill.polyfilled;
 import { IEvent, EventEmitter } from "../main";
 
 export class MyClass extends EventEmitter {

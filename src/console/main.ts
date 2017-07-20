@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-import * as marked from "marked";
+import * as _marked from "marked";
 import * as chalk from "chalk";
 import * as moment from "moment";
 import * as yargs from 'yargs';
@@ -13,7 +13,7 @@ import * as util from 'util'
 const MemoryStream = require("memorystream");
 const markedTerminal = require("marked-terminal");
 
-marked.setOptions({
+_marked.setOptions({
   renderer: new markedTerminal({
     heading: chalk.green.bold,
     firstHeading: chalk.green.bold.underline,
@@ -35,10 +35,27 @@ marked.setOptions({
   })
 });
 
+
 (<any>global).console_monkeypatched = false;
 
 function rtrim(str: string, trimRegEx?: string | undefined): string {
   return trimRegEx ? str.replace(new RegExp(trimRegEx + "*$"), '') : str.replace(/\s*$/, '');
+}
+
+let pad2 = (n: number) => n <= 99 ? ("0" + n).slice(-2) : n;
+
+const _quiet = yargs.argv.quiet;
+const _verbose = yargs.argv.verbose;
+const _debug = yargs.argv.debug;
+
+// reset so we can start fresh...
+yargs.reset();
+
+
+function marked(s: string): string {
+  if (s) {
+    return _marked(s.replace(/\\\./g, `\\\\.`));
+  } return s;
 }
 
 /**
@@ -61,10 +78,6 @@ export function enhanceConsole(): boolean {
     const stdout = process.stdout;
     const stderr = process.stderr;
 
-    const _quiet = yargs.argv.quiet;
-    const _verbose = yargs.argv.verbose;
-    const _debug = yargs.argv.debug;
-
     console.log = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (stdout.isTTY) {
@@ -76,13 +89,8 @@ export function enhanceConsole(): boolean {
     };
 
     console.info = (message?: any, ...optionalParams: any[]) => {
-      if (_verbose) {
-        if (stdout.isTTY) {
-          stdout.write(chalk.bold.magenta(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
-        } else {
-          stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
-        }
-      }
+      // spit this out regardless to console.log directly. Not Processed.
+      log(message, ...optionalParams);
     };
 
     /*
@@ -117,7 +125,7 @@ export function enhanceConsole(): boolean {
     console.warn = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (stdout.isTTY) {
-          stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
+          stdout.write((chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n'));
         } else {
           stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
         }
@@ -130,18 +138,18 @@ export function enhanceConsole(): boolean {
 
 export function Timestamp(): string {
   const m = new Date();
-  const hh = `${m.getHours()}`;
-  const mm = `${m.getMinutes()}`;
-  const ss = `${m.getSeconds()}`;
+  const hh = `${pad2(m.getHours())}`;
+  const mm = `${pad2(m.getMinutes())}`;
+  const ss = `${pad2(m.getSeconds())}`;
 
   return chalk.red(`${chalk.gray(hh)}:${chalk.gray(mm)}:${chalk.gray(ss)}`);
 }
 
 export function NoColorTimestamp(): string {
   const m = new Date();
-  const hh = `${m.getHours()}`;
-  const mm = `${m.getMinutes()}`;
-  const ss = `${m.getSeconds()}`;
+  const hh = `${pad2(m.getHours())}`;
+  const mm = `${pad2(m.getMinutes())}`;
+  const ss = `${pad2(m.getSeconds())}`;
 
   return `${hh}:${mm}:${ss}`;
 }
@@ -178,7 +186,19 @@ cli.title = (text: string) => {
   return cli;
 };
 
+
 cli
   .wrap(0)
-  .help('help', "Show help")
+  .help('help', "`Show help`")
+  .option("quiet", {
+    describe: "`suppress most output information`",
+    type: "boolean",
+  }).option("verbose", {
+    describe: "`display verbose logging information`",
+    type: "boolean",
+  })
+  .option("debug", {
+    describe: "`display debug logging information`",
+    type: "boolean",
+  })
   .usage(`# ${_title}\n${_copyright}\n## Usage: ${_name} <command> [options]`);
