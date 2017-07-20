@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/extension",
-  "version": "1.0.62",
+  "version": "1.0.65",
   "description": "NPM-Based extension aquisition (for Azure Open Source Projects)",
   "engines": {
     "node": ">=7.10.0"
