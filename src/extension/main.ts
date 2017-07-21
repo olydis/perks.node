@@ -415,6 +415,10 @@ export class ExtensionManager {
     const cc = <any>await npm_config;
     const extension = new Extension(pkg, this.installationPath);
 
+    if (!asyncIO.exists(this.installationPath)) {
+      await asyncIO.mkdir(this.installationPath);
+    }
+
     // change directory
     const cwd = process.cwd();
     await asyncIO.mkdir(this.installationPath);
@@ -439,6 +443,7 @@ export class ExtensionManager {
 
     progress.Progress.Dispatch(25);
     progress.Message.Dispatch("[FYI- npm does not currently support progress... this may take a few moments]");
+    let release: asyncIO.release | null = null;
 
     try {
       // set the prefix to the target location
@@ -448,34 +453,36 @@ export class ExtensionManager {
       cc.force = force;
 
       if (await asyncIO.isDirectory(extension.location)) {
-        const release = await asyncIO.Lock.waitForExclusive(extension.location);
-        if (force) {
-          try {
-            await asyncIO.rmdir(extension.location);
-          }
-          catch (e) {
-            // no worries.
-          }
-        } else {
+        release = await asyncIO.Lock.waitForExclusive(extension.location);
+
+        if (!force) {
           // already installed
+          // if the target folder is created, we're going to make the naive assumption that the package is installed. (--force will blow away)
           return extension;
         }
-        if (release) {
-          await release();
+
+        // force removal first
+        try {
+
+          await asyncIO.rmdir(extension.location);
+        }
+        catch (e) {
+          // no worries.
         }
       }
 
+      // create the folder
       await asyncIO.mkdir(extension.location);
-      const release = await asyncIO.Lock.waitForExclusive(extension.location);
+
+      // acquire the write lock if we don't have it already
+      release = release || await asyncIO.Lock.waitForExclusive(extension.location);
+
       if (release) {
         // run NPM INSTALL for the package.
         progress.NotifyMessage(`Running  npm install for ${pkg.name}, ${pkg.version}`);
 
         const results = await npmInstall(pkg.name, pkg.version, extension.source, force || false);
         progress.NotifyMessage(`npm install completed ${pkg.name}, ${pkg.version}`);
-
-
-        await release();
       } else {
         throw new Exception("NO LOCK.")
       }
@@ -499,6 +506,9 @@ export class ExtensionManager {
       process.chdir(cwd);
       progress.Progress.Dispatch(100);
       progress.End.Dispatch(null);
+      if (release) {
+        await release();
+      }
     }
   }
 
