@@ -277,10 +277,10 @@ export class ExtensionManager {
   public dotnetPath = path.normalize(`${os.homedir()}/.dotnet`);
 
   public static async Create(installationPath: string): Promise<ExtensionManager> {
-    if (!asyncIO.exists(installationPath)) {
+    if (!await asyncIO.exists(installationPath)) {
       await asyncIO.mkdir(installationPath);
     }
-    if (!asyncIO.isDirectory(installationPath)) {
+    if (!await asyncIO.isDirectory(installationPath)) {
       throw new Exception(`Extension folder '${installationPath}' is not a valid directory`);
     }
 
@@ -417,6 +417,7 @@ export class ExtensionManager {
 
     // change directory
     const cwd = process.cwd();
+    await asyncIO.mkdir(this.installationPath);
     process.chdir(this.installationPath);
 
     progress.Start.Dispatch(null);
