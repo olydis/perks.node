@@ -23,6 +23,50 @@ import { ExtensionManager, UnresolvedPackageException, InvalidPackageIdentityExc
     await this.extensionManager.dispose();
     await asyncio.rmdir(this.tmpFolder);
   }
+
+  @test async "Test Reset"() {
+    console.log("Resetting")
+    await this.extensionManager.reset();
+
+    {
+      console.log("Installing Once");
+      // install it once
+      const dni = await this.extensionManager.findPackage("echo-cli", "*");
+      const installing = this.extensionManager.installPackage(dni, false, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) }));
+      const extension = await installing;
+      assert.notEqual(await extension.configuration, "");
+    }
+
+    {
+      console.log("Attempt Overwrite")
+      // install/overwrite
+      const dni = await this.extensionManager.findPackage("echo-cli", "*");
+      const installing = this.extensionManager.installPackage(dni, true, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer2:${m}`) }));
+
+      // install at the same time?
+      const dni2 = await this.extensionManager.findPackage("echo-cli", "*");
+      const installing2 = this.extensionManager.installPackage(dni2, true, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer3:${m}`) }));
+
+      // wait for it.
+      const extension = await installing;
+      assert.notEqual(await extension.configuration, "");
+
+      const extension2 = await installing2;
+      assert.notEqual(await extension.configuration, "");
+
+      let done = false;
+      for (const each of await this.extensionManager.getInstalledExtensions()) {
+        done = true;
+        // make sure we have one extension installed and that it is echo-cli (for testing)
+        assert.equal(each.name, "echo-cli");
+      }
+
+      assert.equal(done, true, "Package is not installed");
+      await polyfill.Delay(5000);
+    }
+  }
+
+
   @test async "FindPackage- in github"() {
     // github repo style
     const npmpkg = await this.extensionManager.findPackage("npm", "npm/npm");
@@ -128,45 +172,5 @@ import { ExtensionManager, UnresolvedPackageException, InvalidPackageIdentityExc
     assert.notEqual(await extension2.configuration, "");
   }
 
-  @test async "Test Reset"() {
-    console.log("Resetting")
-    await this.extensionManager.reset();
 
-    {
-      console.log("Installing Once");
-      // install it once
-      const dni = await this.extensionManager.findPackage("echo-cli", "*");
-      const installing = this.extensionManager.installPackage(dni, false, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer:${m}`) }));
-      const extension = await installing;
-      assert.notEqual(await extension.configuration, "");
-    }
-
-    {
-      console.log("Attempt Overwrite")
-      // install/overwrite
-      const dni = await this.extensionManager.findPackage("echo-cli", "*");
-      const installing = this.extensionManager.installPackage(dni, true, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer2:${m}`) }));
-
-      // install at the same time?
-      const dni2 = await this.extensionManager.findPackage("echo-cli", "*");
-      const installing2 = this.extensionManager.installPackage(dni2, true, 30000, (i) => i.Message.Subscribe((s, m) => { console.log(`Installer3:${m}`) }));
-
-      // wait for it.
-      const extension = await installing;
-      assert.notEqual(await extension.configuration, "");
-
-      const extension2 = await installing2;
-      assert.notEqual(await extension.configuration, "");
-
-      let done = false;
-      for (const each of await this.extensionManager.getInstalledExtensions()) {
-        done = true;
-        // make sure we have one extension installed and that it is echo-cli (for testing)
-        assert.equal(each.name, "echo-cli");
-      }
-
-      assert.equal(done, true, "Package is not installed");
-      await polyfill.Delay(5000);
-    }
-  }
 }
