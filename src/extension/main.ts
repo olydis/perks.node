@@ -421,7 +421,6 @@ export class ExtensionManager {
 
     // change directory
     const cwd = process.cwd();
-    await asyncIO.mkdir(this.installationPath);
     process.chdir(this.installationPath);
 
     progress.Start.Dispatch(null);
