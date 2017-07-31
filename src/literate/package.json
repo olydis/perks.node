@@ -1,15 +1,15 @@
 {
-  "name": "@microsoft.azure/async-io",
-  "version": "1.0.21",
-  "description": "Promisify'd asnyc wrappers (for Azure Open Source Projects)",
+  "name": "@microsoft.azure/literate",
+  "version": "1.0.17",
+  "description": "Implementation of literate config/documentation support",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
+  "engines": {
+    "node": ">=7.10.0"
+  },
   "scripts": {
     "test": "./node_modules/.bin/mocha dist/test",
     "postversion": "gulp update-dependencies"
-  },
-  "engines": {
-    "node": ">=7.10.0"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,6 @@
   },
   "keywords": [
     "perks",
-    "async",
     "autorest",
     "azure",
     "node",
@@ -32,17 +31,22 @@
   "homepage": "https://github.com/Azure/perks.node#readme",
   "devDependencies": {
     "@types/node": "^7.0.5",
+    "@types/jsonpath": "^0.1.29",
+    "@types/source-map": "^0.5.0",
     "mocha-typescript": "^1.1.4",
     "mocha": "3.2.0",
-    "source-map-support": "^0.4.15",
-    "@types/pify": "0.0.28"
+    "source-map-support": "^0.4.15"
   },
   "dependencies": {
     "@microsoft.azure/polyfill": "^1.0.17",
-    "proper-lockfile": "^2.0.1",
-    "pify": "^2.3.0",
-    "get-uri": "^2.0.1",
-    "urijs":"~1.18.10",
-    "file-url": "2.0.2"
+    "@microsoft.azure/async-io": "^1.0.21",
+    "@microsoft.azure/eventing": "^1.0.16",
+    "vscode-jsonrpc": "3.3.1",
+    "yaml-ast-parser": "https://github.com/olydis/yaml-ast-parser/releases/download/0.0.34/yaml-ast-parser-0.0.34.tgz",
+    "commonmark": "^0.27.0",
+    "linq-es2015": "^2.4.25",
+    "jsonpath" : "~0.2.12",
+    "safe-eval": "^0.3.0",
+    "source-map": "^0.5.6"
   }
 }
