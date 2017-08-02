@@ -35,12 +35,12 @@ const pathOption = {
 };
 
 enhanceConsole()
-const msgs = new MessageEmitter();
+
 
 async function main() {
   try {
 
-    msgs.Message.Subscribe((src, each) => console.log(each.Text));
+
     const args = cli
       .app("literate-configuration")
       .title("Work with a literate config file")
@@ -56,6 +56,9 @@ async function main() {
         file: fileOption,
         tag: { alias: 't', description: "**tag name**", required: true }
       }, (args) => exitCode = getFiles(args))
+      .command('all', "**Get all the tags/files**", {
+        file: fileOption
+      }, (args) => exitCode = all(args))
       .argv;
 
     process.exit(await exitCode);
@@ -98,6 +101,9 @@ async function checkFile(args): Promise<string> {
 
 async function read(file: string, tag: string | null = null): Promise<ConfigurationView<AutoRestConfig>> {
   // autorest configuration type
+  const msgs = new MessageEmitter();
+  msgs.Message.Subscribe((src, each) => console.log(each.Text));
+
   const cfg = new Configuration<AutoRestConfig>("\n> see https://aka.ms/autorest", new DiskFileSystem("readme.md"), ResolveUri(CreateFolderUri(process.cwd()), CreateFileUri(file) || "."), {
     "input-file": [],
   });
@@ -145,6 +151,19 @@ async function getTags(args: any): Promise<number> {
   }
   console.log(tags);
 
+  return 0;
+}
+
+async function all(args: any): Promise<number> {
+  const file = await checkFile(args);
+  const allTags = scanForTags(await readFile(file));
+  const result = {};
+
+  for (const each of allTags) {
+    result[each] = (await read(file, each))["input-file"]
+  }
+
+  console.log(result);
   return 0;
 }
 
