@@ -137,15 +137,9 @@ async function getTags(args: any): Promise<number> {
   const tags = new Array<string>();
   let i = 0;
   for (const each of allTags) {
-    if (!i++) {
-      continue;
-    }
-
-    console.log(`checking tag ${each}`);
     const inputs = (await read(file, each))["input-file"];
 
     if (inputs.indexOf(args.path) > -1) {
-      console.log(` adding ${each}`);
       tags.push(each);
     }
   }
