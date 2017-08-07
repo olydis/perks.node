@@ -6,5 +6,5 @@
 import * as events from "events";
 import { Exception } from "@microsoft.azure/polyfill"
 
-export { Configuration, ConfigurationView } from "./Configuration"
+export { Configuration, ConfigurationView, MessageEmitter } from "./configuration"
 export { IFileSystem, MemoryFileSystem, DiskFileSystem } from "./file-system"

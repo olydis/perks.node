@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/literate",
-  "version": "1.0.19",
+  "version": "1.0.21",
   "description": "Implementation of literate config/documentation support",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
