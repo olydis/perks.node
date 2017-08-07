@@ -1,6 +1,6 @@
 {
   "name": "@microsoft.azure/literate",
-  "version": "1.0.22",
+  "version": "1.0.21",
   "description": "Implementation of literate config/documentation support",
   "main": "./dist/main.js",
   "typings": "./dist/main.d.ts",
@@ -38,6 +38,7 @@
     "@types/source-map": "^0.5.0",
     "mocha-typescript": "^1.1.4",
     "mocha": "3.2.0",
+    "@types/yargs":"~8.0.2",
     "source-map-support": "^0.4.15"
   },
   "dependencies": {
@@ -51,6 +52,7 @@
     "linq-es2015": "^2.4.25",
     "jsonpath": "~0.2.12",
     "safe-eval": "^0.3.0",
+    "yargs" : "~8.0.2",
     "source-map": "^0.5.6"
   }
 }
