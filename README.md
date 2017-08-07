@@ -23,6 +23,9 @@ Adds support to make consistent command line developer tools.
 #### eventing 
 - nice eventing framework with subscribe/unsubscribe that's TS friendly
 
+#### literate 
+- Literate document loading/parsing
+
 ----
 
 # Contributing

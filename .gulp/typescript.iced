@@ -78,7 +78,7 @@ task 'publish', '', ['init-deps', 'build'], (done)->
       fn = filename each.path
       task 'publish', fn, (fin) ->
         echo "Running npm publish for #{each.path}."
-        exec "#{basefolder}/node_modules/.bin/npm publish", {cwd: each.path, silent:true }, (code,stdout,stderr) ->
+        exec "#{basefolder}/node_modules/.bin/npm publish --access public", {cwd: each.path, silent:true }, (code,stdout,stderr) ->
           echo stdout
           if( code )
             if( stderr.indexOf "previously" > -1 )

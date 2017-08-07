@@ -1,4 +1,4 @@
-# Project: @microsoft.azure/async-ic
+# Project: @microsoft.azure/literate 
 
 This package contains common code for the developer tools for generating Azure SDKs.
 
@@ -7,7 +7,7 @@ Including:
 - dotnet-install
 
 ### Description
-Async IO wrappers
+Literate documentation support
 
 ----
 

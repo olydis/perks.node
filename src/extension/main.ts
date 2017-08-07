@@ -377,6 +377,23 @@ export class ExtensionManager {
     return new Package(resolved, pm, this);
   }
 
+  public async getInstalledExtension(name: string, version: string): Promise<Extension | null> {
+    if (!semver.validRange(version)) {
+      // if they asked for something that isn't a valid range, we have to find out what version 
+      // the target package actually is.
+      const pkg = await this.findPackage(name, version);
+      version = pkg.version;
+    }
+
+    const installed = await this.getInstalledExtensions();
+    for (const each of installed) {
+      if (name == each.name && semver.satisfies(each.version, version)) {
+        return each;
+      }
+    }
+    return null;
+  }
+
   public async getInstalledExtensions(): Promise<Array<Extension>> {
     await npm_config;
     const results = new Array<Extension>();
