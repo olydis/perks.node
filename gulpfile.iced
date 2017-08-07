@@ -107,6 +107,7 @@ task 'init-deps', '', (done)->
         version: prjson.version
         dependencies: []
       }
+      next null
   return null
 
 updateVersions = () ->
