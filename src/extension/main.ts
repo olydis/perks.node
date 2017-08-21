@@ -564,12 +564,14 @@ export class ExtensionManager {
       }
     }
 
+    env[getPathVariableName()] = `${path.join(extension.modulePath, "node_modules", ".bin")}${path.delimiter}${env[getPathVariableName()]}`;
+
     if (command[0] == 'node') {
       // nodejs or electron. Use child_process.fork()
       return childProcess.fork(command[1], command.slice(2), { env: env, cwd: extension.modulePath, silent: true })
     }
     // spawn the command 
-    return childProcess.spawn(command[0], command.slice(1), { env: env, cwd: extension.modulePath });
+    return childProcess.exec(extension.definition.scripts.start, { env: env, cwd: extension.modulePath });
   }
 }
 
