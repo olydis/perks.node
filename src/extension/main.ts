@@ -21,7 +21,6 @@ import { Progress, Subscribe } from '@microsoft.azure/eventing'
 import * as path from 'path';
 import * as fetch from "npm/lib/fetch-package-metadata";
 import * as npmlog from 'npm/node_modules/npmlog'
-import * as untildify from "untildify"
 
 const npmview = require('npm/lib/view')
 const MemoryStream = require('memorystream')
@@ -161,7 +160,6 @@ export class Package {
 export class Extension extends Package {
   /* @internal */ public constructor(pkg: Package, private installationPath: string) {
     super(pkg.resolvedInfo, pkg.packageMetadata, pkg.extensionManager);
-    this.installationPath = untildify(installationPath);
   }
   /**
    * The installed location the package. 
@@ -507,7 +505,9 @@ export class ExtensionManager {
     // add each engine into the front of the path.
     let env = shallowCopy(process.env);
 
+    // add potential .bin folders (depends on platform and npm version)
     env[getPathVariableName()] = `${path.join(extension.modulePath, "node_modules", ".bin")}${path.delimiter}${env[getPathVariableName()]}`;
+    env[getPathVariableName()] = `${path.join(extension.location, "node_modules", ".bin")}${path.delimiter}${env[getPathVariableName()]}`;
 
     if (command[0] == 'node') {
       // nodejs or electron. Use child_process.fork()
