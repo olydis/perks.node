@@ -15,13 +15,13 @@ import { Exception, shallowCopy } from '@microsoft.azure/polyfill'
 import * as npa from 'npm-package-arg'
 import * as u from 'util';
 import * as os from 'os';
-import * as dotnet from "dotnet-install"
 import * as semver from 'semver';
 import { Progress, Subscribe } from '@microsoft.azure/eventing'
 
 import * as path from 'path';
 import * as fetch from "npm/lib/fetch-package-metadata";
 import * as npmlog from 'npm/node_modules/npmlog'
+import * as untildify from "untildify"
 
 const npmview = require('npm/lib/view')
 const MemoryStream = require('memorystream')
@@ -145,10 +145,6 @@ export class Package {
     return this.packageMetadata._spec;
   }
 
-  get engines(): Array<any> {
-    return this.packageMetadata.engines;
-  }
-
   async install(force: boolean = false): Promise<Extension> {
     return this.extensionManager.installPackage(this, force);
   }
@@ -165,6 +161,7 @@ export class Package {
 export class Extension extends Package {
   /* @internal */ public constructor(pkg: Package, private installationPath: string) {
     super(pkg.resolvedInfo, pkg.packageMetadata, pkg.extensionManager);
+    this.installationPath = untildify(installationPath);
   }
   /**
    * The installed location the package. 
@@ -333,34 +330,6 @@ export class ExtensionManager {
 
   }
 
-  // public async installEngine(name: string, version: string, onStart: () => void = () => { }, onEnd: () => void = () => { }, onProgress: (n:number) => void = (n) => { }, onMessage: (t:string) => void = (t) => { } ): Promise<any> {
-  public async installEngine(name: string, version: string, force: boolean = false, progressInit: Subscribe = () => { }): Promise<void> {
-    switch (name) {
-      case "dotnet":
-
-        const selectedVersion = semver.maxSatisfying(dotnet.getAllReleases(), version, true)
-        if (!selectedVersion) {
-          throw new UnsatisfiedEngineException(name, version)
-        }
-        const operatingSystem = dotnet.detectOperatingSystem(selectedVersion);
-        if (!operatingSystem) {
-          throw new UnsatisfiedEngineException(name, version, ` -- unsupported operating system.`);
-        }
-        if (!force && dotnet.isInstalled(selectedVersion, this.dotnetPath)) {
-          return;
-        }
-
-        return dotnet.installFramework(selectedVersion, operatingSystem, os.arch(), this.dotnetPath, false, progressInit);
-      case "node":
-      case "npm":
-        // no worries with these for now
-        return;
-
-      default:
-        throw new UnsatisfiedEngineException(name, version);
-    }
-  }
-
   public async getPackageVersions(name: string): Promise<string[]> {
     const cc = <any>await npm_config;
     return Object.getOwnPropertyNames(await npmView(name))
@@ -404,7 +373,7 @@ export class ExtensionManager {
       const fullpath = path.join(this.installationPath, folder);
       if (await asyncIO.isDirectory(fullpath)) {
 
-        const split = /((@.+)#)?(.+)@(.+)/.exec(folder);
+        const split = /((@.+)_)?(.+)@(.+)/.exec(folder);
         if (split) {
           try {
             const org = split[2];
@@ -441,21 +410,6 @@ export class ExtensionManager {
     process.chdir(this.installationPath);
 
     progress.Start.Dispatch(null);
-
-    const engineCount = extension.engines ? Object.getOwnPropertyNames(extension.engines).length : 0;
-
-    if (extension.engines) {
-      for (const engine in extension.engines) {
-        progress.Message.Dispatch(`Installing ${engine}, ${extension.engines[engine]}`);
-
-        await this.installEngine(engine, extension.engines[engine], force, installing => {
-          // all engines are 1/4 of the install. 
-          // each engine is 1/count of the progress; 
-          installing.Progress.Subscribe((src, percent) => progress.Progress.Dispatch((percent / engineCount) / 4));
-        });
-
-      }
-    }
 
     progress.Progress.Dispatch(25);
     progress.Message.Dispatch("[FYI- npm does not currently support progress... this may take a few moments]");
@@ -552,17 +506,6 @@ export class ExtensionManager {
     }
     // add each engine into the front of the path.
     let env = shallowCopy(process.env);
-
-    if (extension.engines) {
-      for (const engine in extension.engines) {
-        switch (engine) {
-          case 'dotnet':
-            // insert dotnet into the path. version not important, since the dotnet executable handles that.
-            env[getPathVariableName()] = `${this.dotnetPath}${path.delimiter}${env[getPathVariableName()]}`
-            break;
-        }
-      }
-    }
 
     env[getPathVariableName()] = `${path.join(extension.modulePath, "node_modules", ".bin")}${path.delimiter}${env[getPathVariableName()]}`;
 
