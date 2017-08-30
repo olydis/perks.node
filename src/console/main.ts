@@ -93,17 +93,6 @@ export function enhanceConsole(): boolean {
       log(message, ...optionalParams);
     };
 
-    /*
-        console.debug = (message?: any, ...optionalParams: any[]) => {
-          if (_debug) {
-            if (stdout.isTTY) {
-              stdout.write(chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
-            } else {
-              stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
-            }
-          }
-        };
-    */
     console.error = (message?: any, ...optionalParams: any[]) => {
       if (stderr.isTTY) {
         stderr.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
@@ -125,9 +114,9 @@ export function enhanceConsole(): boolean {
     console.warn = (message?: any, ...optionalParams: any[]) => {
       if (!_quiet) {
         if (stdout.isTTY) {
-          stdout.write((chalk.bold.yellow(`[${Timestamp()}] `) + rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n'));
+          stdout.write(rtrim(marked(rtrim(`${util.format(message, ...optionalParams)}`))) + '\n');
         } else {
-          stdout.write(NoColorTimestamp() + util.format(message, ...optionalParams) + '\n');
+          stdout.write(util.format(message, ...optionalParams) + '\n');
         }
       }
     }

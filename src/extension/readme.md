@@ -4,7 +4,6 @@ This package contains common code for the developer tools for generating Azure S
 
 Including:
 - AutoRest
-- dotnet-install
 
 ### Description
 ExtensionManager
