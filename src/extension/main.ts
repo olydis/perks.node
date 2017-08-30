@@ -382,7 +382,7 @@ export class ExtensionManager {
             const pm = await fetchPackageMetadata(actualPath, actualPath, {});
             const ext = new Extension(new Package(null, pm, this), this.installationPath);
             if (fullpath !== ext.location) {
-              console.error(`Not reporting '${fullpath}' since its package.json claims it should be at '${ext.location}' (probably symlinked once and modified later)`);
+              console.trace(`WARNING: Not reporting '${fullpath}' since its package.json claims it should be at '${ext.location}' (probably symlinked once and modified later)`);
               continue;
             }
             results.push(ext);
