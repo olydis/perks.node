@@ -380,7 +380,12 @@ export class ExtensionManager {
 
             const actualPath = org ? path.normalize(`${fullpath}/node_modules/${org}/${name}`) : path.normalize(`${fullpath}/node_modules/${name}`)
             const pm = await fetchPackageMetadata(actualPath, actualPath, {});
-            results.push(new Extension(new Package(null, pm, this), this.installationPath));
+            const ext = new Extension(new Package(null, pm, this), this.installationPath);
+            if (fullpath !== ext.location) {
+              console.error(`Not reporting '${fullpath}' since its package.json claims it should be at '${ext.location}' (probably symlinked once and modified later)`);
+              continue;
+            }
+            results.push(ext);
           } catch (e) {
             // ignore things that don't look right.
           }
