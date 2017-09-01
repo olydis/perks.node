@@ -162,7 +162,7 @@ export class Extension extends Package {
     super(pkg.resolvedInfo, pkg.packageMetadata, pkg.extensionManager);
   }
   /**
-   * The installed location the package. 
+   * The installed location of the package. 
    */
   public get location(): string {
     return path.normalize(`${this.installationPath}/${this.id.replace('/', '_')}`);
@@ -220,6 +220,26 @@ export class Extension extends Package {
 
   async start(): Promise<childProcess.ChildProcess> {
     return this.extensionManager.start(this);
+  }
+}
+
+/** 
+ * LocalExtension is a local extension that must not be installed.
+ * @extends Extension
+ * */
+export class LocalExtension extends Extension {
+  public constructor(pkg: Package, private extensionPath: string) {
+    super(pkg, "");
+  }
+  public get location(): string {
+    return this.extensionPath;
+  }
+  public get modulePath(): string {
+    return this.extensionPath;
+  }
+
+  async remove(): Promise<void> {
+    throw new Error("Cannot remove local extension. Lifetime not our responsibility.");
   }
 }
 
